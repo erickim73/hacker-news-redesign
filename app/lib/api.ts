@@ -142,19 +142,20 @@ const HackerNewsAPI = {
             }
             
             return comment
-          }
-          
-          // get top-level comments in parallel
-          const commentsPromises = story.kids.map(kidId => 
-            fetchCommentWithReplies(kidId, 1)
-          )
-          
-          const comments = await Promise.all(commentsPromises)
-          return comments.filter(comment => comment !== null) as Comment[]
-        } catch (error) {
-          console.error(`Error fetching comments for story ${storyId}:`, error)
-          return []
         }
+          
+            // get top-level comments in parallel
+            const commentsPromises = story.kids.map(kidId => 
+                fetchCommentWithReplies(kidId, 1)
+            )
+            
+            const comments = await Promise.all(commentsPromises)
+                return comments.filter(comment => comment !== null) as Comment[]
+                
+            } catch (error) {
+                console.error(`Error fetching comments for story ${storyId}:`, error)
+                return []
+            }
       },
 
     //   get user information

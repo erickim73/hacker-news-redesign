@@ -1,17 +1,19 @@
 "use client"
 
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useState, useCallback} from 'react'
 import HackerNewsAPI, {Story} from './lib/api'
 import StoryList from './components/StoryList'
 import { useLocalStorage } from './lib/localStorage'
+import { useInfiniteScroll } from './lib/useInfiniteScroll'
 
 export default function HomePage() {
     // state to store story data
     const [stories, setStories] = useState<Story[]>([])
-    const [loading, setLoading] = useState<boolean>(true)
+    const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
     const [page, setPage] = useState<number>(1)
     const [hasMore, setHasMore] = useState<boolean>(true)
+    const [storyIds, setStoryIds] = useState<number[]>([]) 
 
     // load read/starred states from local storage
     const [readStories, setReadStories] = useLocalStorage<number[]>('readStories', [])
@@ -21,43 +23,78 @@ export default function HomePage() {
 
     // get stories on component mount
     useEffect(() => {
-        fetchStories()
+        const fetchStoryIds = async () => {
+            try {
+                const ids = await HackerNewsAPI.getTopStoryIds()
+                setStoryIds(ids)
+                setHasMore(ids.length > 0)
+            } catch (error) {
+                setError("Failed to load stories.")
+                console.error("Error fetching stories:", error)
+            }
+        }
+        fetchStoryIds()
     }, [])
 
     // function to fetch stories with pages
-    const fetchStories = async () => {
+    const fetchStories = useCallback(async () => {
+        // skip fetching if already loading or no more stories
+        if (loading || !hasMore || storyIds.length === 0) return
+        
+        setLoading(true)
+        setError(null)
+
         try {
-            setLoading(true)
-
-            // get all story ids
-            const storyIds = await HackerNewsAPI.getTopStoryIds()
-
             // calculate start and end indices for pages
             const start = (page - 1) * items_per_page
             const end = start + items_per_page
 
             // check if there are more stories to load
-            setHasMore(end < storyIds.length)
+            if (start >= storyIds.length) {
+                setHasMore(false)
+                return
+            }
 
             // get stories for current page
-            const fetchedStories = await HackerNewsAPI.getStoriesByIds(storyIds, start, end)
+            const currentPageIds = storyIds.slice(start, end)
+            const fetchedStories = await HackerNewsAPI.getStoriesByIds(currentPageIds)
 
-            // mark stories as read or starred according to local storage
-            const processedStories = fetchedStories.map(story => ({
-                ...story,
-                isRead: readStories.includes(story.id),
-                isStarred: starredStories.includes(story.id)
-            }))
-    
-            setStories(prevStories => [...prevStories, ...processedStories])
+            // use functional update to avoid stale state
+            setStories(prevStories => {
+                const existingIds = new Set(prevStories.map(story => story.id))
+                const newStories = fetchedStories
+                    .filter(story => !existingIds.has(story.id))
+                    .map(story => ({
+                        ...story,
+                        isRead: readStories.includes(story.id),
+                        isStarred: starredStories.includes(story.id),
+                    }))
+                return [...prevStories, ...newStories]
+            })
+
             setPage(prevPage => prevPage + 1)
+            setHasMore(end < storyIds.length)
+
         } catch (error) {
             setError("Failed to fetch stories. Please try again later.")
             console.error("Error fetching stories:", error)
         } finally {
             setLoading(false)
         }
-    }
+    }, [page, loading, hasMore, storyIds, readStories, starredStories])
+
+    // trigger initial fetch after storyIds are loaded
+    useEffect(() => {
+        if (storyIds.length > 0) {
+            fetchStories()
+        }
+    }, [storyIds, fetchStories]) // fetch when storyIds change
+
+    // use infinite scroll hook
+    useInfiniteScroll(fetchStories, {
+        threshold: 300,
+        disabled: loading || !hasMore,
+    })
 
     // marks story as read
     const handleReadStory = (storyId: number) => {
@@ -115,21 +152,9 @@ export default function HomePage() {
             />
             
             {/* loading indicator */}
-            {loading && (
+            {(loading ) && (
                 <div className="flex justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                </div>
-            )}
-            
-            {/* show more button */}
-            {!loading && hasMore && (
-                <div className="flex justify-center">
-                    <button
-                        onClick={fetchStories}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded"
-                    >
-                        Show More
-                    </button>
                 </div>
             )}
             
