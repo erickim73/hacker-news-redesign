@@ -14,6 +14,8 @@ export default function StarredPage() {
     // load read/starred states from local storage
     const [readStoryIds] = useLocalStorage<number[]>('readStories', [])
     const [starredStoryIds, setStarredStoryIds] = useLocalStorage<number[]>('starredStories', [])
+    const [hiddenStories, setHiddenStories] = useLocalStorage<number[]>('hiddenStories', [])
+
 
     // get starred stories on component mount and when starred story id changes
     useEffect(() => {
@@ -81,6 +83,17 @@ export default function StarredPage() {
         )
     }
 
+    // hide story
+    const handleHideStory = (storyId: number) => {
+        // remove from current displayed stories
+        setStarredStories(prevStories => 
+            prevStories.filter(story => story.id !== storyId)
+        )
+        
+        // add to hidden stories in local storage
+        setHiddenStories([...hiddenStories, storyId])
+    }
+
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Starred Stories</h2>
@@ -104,6 +117,7 @@ export default function StarredPage() {
                     stories={starredStories} 
                     onReadStory={handleReadStory}
                     onToggleStar={handleToggleStar}
+                    onHideStory={handleHideStory}
                 />
             )}
             

@@ -18,6 +18,7 @@ export default function HomePage() {
     // load read/starred states from local storage
     const [readStories, setReadStories] = useLocalStorage<number[]>('readStories', [])
     const [starredStories, setStarredStories] = useLocalStorage<number[]>('starredStories', [])
+    const [hiddenStories, setHiddenStories] = useLocalStorage<number[]>('hiddenStories', [])
 
     const items_per_page = 30
 
@@ -64,6 +65,7 @@ export default function HomePage() {
                 const existingIds = new Set(prevStories.map(story => story.id))
                 const newStories = fetchedStories
                     .filter(story => !existingIds.has(story.id))
+                    .filter(story => !hiddenStories.includes(story.id))
                     .map(story => ({
                         ...story,
                         isRead: readStories.includes(story.id),
@@ -81,7 +83,7 @@ export default function HomePage() {
         } finally {
             setLoading(false)
         }
-    }, [page, loading, hasMore, storyIds, readStories, starredStories])
+    }, [page, loading, hasMore, storyIds, readStories, starredStories, hiddenStories])
 
     // trigger initial fetch after storyIds are loaded
     useEffect(() => {
@@ -89,6 +91,14 @@ export default function HomePage() {
             fetchStories()
         }
     }, [storyIds, fetchStories]) // fetch when storyIds change
+
+    useEffect(() => {
+        if (hiddenStories.length > 0) {
+            setStories(prevStories => 
+                prevStories.filter(story => !hiddenStories.includes(story.id))
+            )
+        }
+    }, [hiddenStories])
 
     // use infinite scroll hook
     useInfiniteScroll(fetchStories, {
@@ -133,6 +143,17 @@ export default function HomePage() {
         }
     }
 
+    // hide story
+    const handleHideStory = (storyId: number) => {
+        // Remove from current displayed stories
+        setStories(prevStories => 
+            prevStories.filter(story => story.id !== storyId)
+        )
+        
+        // add to hidden stories in local storage
+        setHiddenStories([...hiddenStories, storyId])
+    }
+
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Top Stories</h2>
@@ -149,6 +170,7 @@ export default function HomePage() {
                 stories={stories} 
                 onReadStory={handleReadStory}
                 onToggleStar={handleToggleStar}
+                onHideStory={handleHideStory}
             />
             
             {/* loading indicator */}

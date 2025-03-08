@@ -6,6 +6,7 @@ interface StoryListProps {
     stories: Story[]
     onReadStory: (storyId: number) => void
     onToggleStar: (storyId: number) => void
+    onHideStory: (storyId: number) => void
 }
 
 // render list of stories
@@ -13,6 +14,7 @@ const StoryList: React.FC<StoryListProps> = ({
     stories, 
     onReadStory,
     onToggleStar,
+    onHideStory,
 }) => {
     // no stories
     if (stories.length === 0) {
@@ -31,6 +33,7 @@ const StoryList: React.FC<StoryListProps> = ({
                 story={story} 
                 onReadStory={onReadStory}
                 onToggleStar={onToggleStar}
+                onHideStory={onHideStory}
                 />
             ))}
         </div>

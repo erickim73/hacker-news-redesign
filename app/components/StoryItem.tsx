@@ -1,10 +1,12 @@
 import React from 'react'
 import type {Story} from '../lib/api'
+import Link from 'next/link';
 
 interface StoryItemProps {
     story: Story;
     onReadStory: (storyId: number) => void
     onToggleStar: (storyId: number) => void
+    onHideStory: (storyId: number) => void
 }
 
 // render one single story
@@ -12,6 +14,7 @@ const StoryItem: React.FC<StoryItemProps> = ({
     story,
     onReadStory,
     onToggleStar,
+    onHideStory
 }) => {
     // format timestamp to easy to read format
     const formatDate = (timestamp: number) => {
@@ -23,6 +26,18 @@ const StoryItem: React.FC<StoryItemProps> = ({
             hour: '2-digit',
             minute: '2-digit',
         })
+    }
+
+    // format URL for display
+    const formatUrl = (url?: string) => {
+        if (!url) return 'self'
+        try {
+            const urlObj = new URL(url)
+            return urlObj.hostname.replace('www.', '')
+        } catch (error) {
+            return 'link'
+            console.error("Error getting URL: ", error)
+        }
     }
 
     // handle clicking on story
@@ -44,6 +59,20 @@ const StoryItem: React.FC<StoryItemProps> = ({
         onToggleStar(story.id)
     }
 
+    // handle hiding a story
+    const handleHideStory = (e: React.MouseEvent) => {
+        // prevent click from bubbling up to parent, opening story
+        e.stopPropagation()
+
+        // hide
+        onHideStory(story.id)
+    }
+
+    // prevent propagation when clicking on user or comments links
+  const handleInternalLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
     return (
         <div 
             className={`p-4 rounded-lg shadow-md cursor-pointer transition hover:shadow-lg
@@ -53,23 +82,42 @@ const StoryItem: React.FC<StoryItemProps> = ({
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1">
-                <h3 className={`text-lg font-medium mb-1 ${story.isRead ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
-                    {story.title}
-                </h3>
+                    <h3 className={`text-lg font-medium mb-1 ${story.isRead ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                        {story.title}
+                    </h3>
                 
                 <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap gap-2">
-                    {/* show domain if URL exists */}
+                    {/* show domain if url exists */}
                     {story.url && (
-                    <span className="inline-block">
-                        ({new URL(story.url).hostname.replace('www.', '')})
-                    </span>
+                        <span className="inline-block">
+                            ({formatUrl(story.url)})
+                        </span>
                     )}
-                    
-                    {/* story metadata */}
                     <span>{story.score} points</span>
-                    <span>by {story.by}</span>
+                    <span>by</span>
+                    <Link 
+                            href={`/user/${story.by}`}
+                            className="hover:underline"
+                            onClick={handleInternalLinkClick}
+                        >
+                            {story.by}
+                    </Link>
                     <span>{formatDate(story.time)}</span>
-                    <span>{story.descendants} comments</span>
+                    {story.descendants !== undefined && (
+                            <Link 
+                                href={`/story/${story.id}`}
+                                className="hover:underline"
+                                onClick={handleInternalLinkClick}
+                            >
+                                {story.descendants} {story.descendants === 1 ? 'comment' : 'comments'}
+                            </Link>
+                    )}
+                    <button 
+                        onClick={handleHideStory}
+                        className="hover:underline"
+                    >
+                        hide
+                    </button>
                 </div>
             </div>
                 
