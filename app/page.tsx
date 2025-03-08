@@ -5,6 +5,9 @@ import HackerNewsAPI, {Story} from './lib/api'
 import StoryList from './components/StoryList'
 import { useLocalStorage } from './lib/localStorage'
 import { useInfiniteScroll } from './lib/useInfiniteScroll'
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Bookmark, TrendingUp, Zap } from "lucide-react"
 
 export default function HomePage() {
     // state to store story data
@@ -14,6 +17,7 @@ export default function HomePage() {
     const [page, setPage] = useState<number>(1)
     const [hasMore, setHasMore] = useState<boolean>(true)
     const [storyIds, setStoryIds] = useState<number[]>([]) 
+    const [activeTab, setActiveTab] = useState("top")
 
     // load read/starred states from local storage
     const [readStories, setReadStories] = useLocalStorage<number[]>('readStories', [])
@@ -22,21 +26,50 @@ export default function HomePage() {
 
     const items_per_page = 30
 
-    // get stories on component mount
-    useEffect(() => {
-        const fetchStoryIds = async () => {
-            try {
-                const ids = await HackerNewsAPI.getTopStoryIds()
-                setStoryIds(ids)
-                setHasMore(ids.length > 0)
-            } catch (error) {
-                setError("Failed to load stories.")
-                console.error("Error fetching stories:", error)
+    // helper function to fetch story ids based on active tab
+    const fetchStoryIdsByType = useCallback(async (type: string) => {
+        try {
+            let ids: number[] = []
+        
+            switch (type) {
+                case "top":
+                    ids = await HackerNewsAPI.getTopStoryIds()
+                    break
+                case "new":
+                    ids = await HackerNewsAPI.getNewStoryIds()
+                    break
+                case "best":
+                    ids = await HackerNewsAPI.getBestStoryIds()
+                    break
+                case "starred":
+                    ids = await HackerNewsAPI.getTopStoryIds()
+                    break
+                default:
+                    ids = await HackerNewsAPI.getTopStoryIds()
             }
+    
+            setStoryIds(ids)
+            setHasMore(ids.length > 0)
+            setPage(1) // reset page counter
+            setStories([]) // Clear current stories
+        } catch (error) {
+            setError("Failed to load stories.")
+            console.error("Error fetching stories:", error)
         }
-        fetchStoryIds()
     }, [])
 
+    // handle tab changes
+    const handleTabChange = (value: string) => {
+        setActiveTab(value)
+        fetchStoryIdsByType(value)
+    }
+
+    // get stories on component mount and when tab changes
+    useEffect(() => {
+        fetchStoryIdsByType(activeTab)
+      }, [activeTab, fetchStoryIdsByType])
+
+    
     // function to fetch stories with pages
     const fetchStories = useCallback(async () => {
         // skip fetching if already loading or no more stories
@@ -61,18 +94,27 @@ export default function HomePage() {
             const fetchedStories = await HackerNewsAPI.getStoriesByIds(currentPageIds)
 
             // use functional update to avoid stale state
-            setStories(prevStories => {
-                const existingIds = new Set(prevStories.map(story => story.id))
-                const newStories = fetchedStories
-                    .filter(story => !existingIds.has(story.id))
-                    .filter(story => !hiddenStories.includes(story.id))
-                    .map(story => ({
-                        ...story,
-                        isRead: readStories.includes(story.id),
-                        isStarred: starredStories.includes(story.id),
-                    }))
+            setStories((prevStories) => {
+                const existingIds = new Set(prevStories.map((story) => story.id))
+        
+                // filter and enrich stories
+                let newStories = fetchedStories
+                  .filter((story) => !existingIds.has(story.id))
+                  .filter((story) => !hiddenStories.includes(story.id))
+                  .map((story) => ({
+                    ...story,
+                    isRead: readStories.includes(story.id),
+                    isStarred: starredStories.includes(story.id),
+                  }))
+        
+                // if on starred tab, only show starred stories
+                if (activeTab === "starred") {
+                  newStories = newStories.filter((story) => starredStories.includes(story.id))
+                }
+        
                 return [...prevStories, ...newStories]
-            })
+              })
+
 
             setPage(prevPage => prevPage + 1)
             setHasMore(end < storyIds.length)
@@ -83,7 +125,7 @@ export default function HomePage() {
         } finally {
             setLoading(false)
         }
-    }, [page, loading, hasMore, storyIds, readStories, starredStories, hiddenStories])
+    }, [page, loading, hasMore, storyIds, readStories, starredStories, hiddenStories, activeTab])
 
     // trigger initial fetch after storyIds are loaded
     useEffect(() => {
@@ -92,6 +134,7 @@ export default function HomePage() {
         }
     }, [storyIds, fetchStories]) // fetch when storyIds change
 
+    // filter out hidden stories
     useEffect(() => {
         if (hiddenStories.length > 0) {
             setStories(prevStories => 
@@ -141,11 +184,16 @@ export default function HomePage() {
             // add to starred stories
         setStarredStories([...starredStories, storyId])
         }
+
+        // if on the starred tab and unstarring, remove it from view
+        if (activeTab === "starred" && isCurrentlyStarred) {
+            setStories((prevStories) => prevStories.filter((story) => story.id !== storyId))
+        }
     }
 
     // hide story
     const handleHideStory = (storyId: number) => {
-        // Remove from current displayed stories
+        // remove from current displayed stories
         setStories(prevStories => 
             prevStories.filter(story => story.id !== storyId)
         )
@@ -154,38 +202,200 @@ export default function HomePage() {
         setHiddenStories([...hiddenStories, storyId])
     }
 
+    // load more stories manually (alternative to infinite scroll)
+    const handleLoadMore = () => {
+        fetchStories()
+    }
+
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Top Stories</h2>
-            
-            {/* show error message */}
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    {error}
-                </div>
-            )}
-            
-            {/* show stories */}
-            <StoryList 
-                stories={stories} 
-                onReadStory={handleReadStory}
-                onToggleStar={handleToggleStar}
-                onHideStory={handleHideStory}
-            />
-            
-            {/* loading indicator */}
-            {(loading ) && (
-                <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                </div>
-            )}
-            
-            {/* no more stories message */}
-            {!loading && !hasMore && stories.length > 0 && (
-                <div className="text-center text-gray-600 dark:text-gray-400">
-                    No more stories to load.
-                </div>
-            )}
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+            {/* tabs for different types of stories */}
+            <Tabs defaultValue="top" value={activeTab} onValueChange={handleTabChange} className="w-full">
+                <TabsList className="grid w-full grid-cols-4 mb-6">
+                    {/* top stories */}
+                    <TabsTrigger value="top" className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        <span>Top Stories</span>
+                    </TabsTrigger>
+
+                    {/* new stories */}
+                    <TabsTrigger value="new" className="flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        <span>New Stories</span>
+                    </TabsTrigger>
+
+                    {/* best stories */}
+                    <TabsTrigger value="best" className="flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        <span>Best Stories</span>
+                    </TabsTrigger>
+
+                    {/* starred stories */}
+                    <TabsTrigger value="starred" className="flex items-center gap-2">
+                        <Bookmark className="h-4 w-4" />
+                        <span>Starred</span>
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* content for top stories tab */}
+                <TabsContent value="top" className="space-y-6">
+                    {/* show error message */}
+                    {error && (
+                        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* show stories */}
+                    <StoryList
+                        stories={stories}
+                        onReadStory={handleReadStory}
+                        onToggleStar={handleToggleStar}
+                        onHideStory={handleHideStory}
+                    />
+
+                    {/* loading indicator */}
+                    {loading && (
+                        <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    )}
+
+                    {/* no more stories message */}
+                    {!loading && !hasMore && stories.length > 0 && (
+                        <div className="text-center text-muted-foreground py-4">No more stories to load.</div>
+                    )}
+
+                    {/* manual load more button */}
+                    {!loading && hasMore && (
+                        <div className="flex justify-center py-4">
+                        <Button onClick={handleLoadMore} variant="outline" className="w-1/3">
+                            Load More
+                        </Button>
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* duplicate content structure for New Stories tab */}
+                <TabsContent value="new" className="space-y-6">
+                    {error && (
+                        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* show stories */}
+                    <StoryList
+                        stories={stories}
+                        onReadStory={handleReadStory}
+                        onToggleStar={handleToggleStar}
+                        onHideStory={handleHideStory}
+                    />
+
+                    {/* loading indicator */}
+                    {loading && (
+                        <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    )}
+
+                    {/* no more stories message */}
+                    {!loading && !hasMore && stories.length > 0 && (
+                        <div className="text-center text-muted-foreground py-4">No more stories to load.</div>
+                    )}
+
+                    {/* manual load more button */}
+                    {!loading && hasMore && (
+                        <div className="flex justify-center py-4">
+                            <Button onClick={handleLoadMore} variant="outline" className="w-1/3">
+                                Load More
+                            </Button>
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* duplicate content structure for Best Stories tab */}
+                <TabsContent value="best" className="space-y-6">
+                    {error && (
+                        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* show stories */}
+                    <StoryList
+                        stories={stories}
+                        onReadStory={handleReadStory}
+                        onToggleStar={handleToggleStar}
+                        onHideStory={handleHideStory}
+                    />
+
+                    {/* loading indicator */}
+                    {loading && (
+                        <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    )}
+
+                    {/* no more stories message */}
+                    {!loading && !hasMore && stories.length > 0 && (
+                        <div className="text-center text-muted-foreground py-4">No more stories to load.</div>
+                    )}
+
+                    {/* manual load more button */}
+                    {!loading && hasMore && (
+                        <div className="flex justify-center py-4">
+                            <Button onClick={handleLoadMore} variant="outline" className="w-1/3">
+                                Load More
+                            </Button>
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* content for starred tab */}
+                <TabsContent value="starred" className="space-y-6">
+                    
+                    {/* placeholder text for no starred stories */}
+                    {stories.length === 0 && !loading ? (
+                        <div className="text-center text-muted-foreground py-12">
+                        <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                        <h3 className="text-lg font-medium mb-2">No starred stories yet</h3>
+                        <p>Stories you star will appear here for easy access.</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* show stories */}
+                            <StoryList
+                                stories={stories}
+                                onReadStory={handleReadStory}
+                                onToggleStar={handleToggleStar}
+                                onHideStory={handleHideStory}
+                            />
+
+                            {/* loading indicator */}
+                            {loading && (
+                                <div className="flex justify-center py-4">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                </div>
+                            )}
+
+                            {/* loading message for when theres no more starred stories */}
+                            {!loading && !hasMore && stories.length > 0 && (
+                                <div className="text-center text-muted-foreground py-4">No more starred stories to load.</div>
+                            )}
+
+                            {/* manual load more button */}
+                            {!loading && hasMore && (
+                                <div className="flex justify-center py-4">
+                                    <Button onClick={handleLoadMore} variant="outline" className="w-1/3">
+                                        Load More
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }
