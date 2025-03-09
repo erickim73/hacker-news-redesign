@@ -1,21 +1,21 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
-import HackerNewsAPI, { User, Story } from '../../lib/api'
+import { useEffect, useState } from 'react'
+import HackerNewsAPI, { type User, type Story } from '../../lib/api'
 import StoryList from '../../components/StoryList'
 import { useLocalStorage } from '../../lib/localStorage'
 import { useParams } from 'next/navigation';
-
-interface UserPage   {
-    params: {
-        id: string;
-    }
-}
+import { CalendarDays, FileText, Award, ArrowLeft, Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 export default function UserPage() {
     // get username from route params
     const params = useParams(); 
-    const username = params?.id as string; // unwrap params safely
+    const username = params?.id as string; 
     
     // state for user profile
     const [user, setUser] = useState<User | null>(null)
@@ -80,7 +80,7 @@ export default function UserPage() {
         }
         
         fetchUserData();
-    }, [username, readStories, starredStories])
+    }, [username, readStories, starredStories, hiddenStories])
     
     // marks story as read
     const handleReadStory = (storyId: number) => {
@@ -163,75 +163,125 @@ export default function UserPage() {
     }
   
     return (
-        <div className="space-y-6">
-            {/* page header */}
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                User Profile: {username}
-            </h2>
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+            <div>
+                <Button variant="ghost" size="sm" asChild className="mb-4">
+                    <Link href="/" className="flex items-center gap-1">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span>Back to stories</span>
+                    </Link>
+                </Button>
+            </div>
+
+            <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-bold tracking-tight">User Profile</h1>
+            </div>
             
-            {/* error message */}
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    {error}
-                </div>
+                <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">{error}</div>
             )}
             
-            {/* loading state */}
             {loading && !initialDataLoaded ? (
-                <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader className="space-y-2">
+                            <Skeleton className="h-8 w-1/3" />
+                            <Skeleton className="h-4 w-1/4" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-2/3" />
+                        </CardContent>
+                    </Card>
+
+                    <div className="space-y-4">
+                        <Skeleton className="h-6 w-1/4" />
+                        <div className="space-y-4">
+                            <Skeleton className="h-24 w-full rounded-lg" />
+                            <Skeleton className="h-24 w-full rounded-lg" />
+                            <Skeleton className="h-24 w-full rounded-lg" />
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <>
-                {/* user profile card */}
-                {user && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-start">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{user.id}</h3>
-                            <div className="px-3 py-1 bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100 rounded-full text-sm">
-                                {user.karma} karma
-                            </div>
-                        </div>
-                            
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                            <p>Account created: {formatDate(user.created)} ({calculateAccountAge(user.created)} ago)</p>
-                            <p>Submissions: {user.submitted?.length || 0}</p>
-                        </div>
-                            
-                        {user.about && (
-                            <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">About</h4>
-                                <div 
-                                className="text-sm text-gray-700 dark:text-gray-300 prose dark:prose-invert max-w-none"
-                                dangerouslySetInnerHTML={createMarkup(user.about)}
-                                />
-                            </div>
+                    {user && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <CardTitle className="text-2xl">{user.id}</CardTitle>
+                                    <Badge variant="secondary" className="w-fit flex items-center gap-1.5">
+                                        <Award className="h-3.5 w-3.5" />
+                                        <span>{user.karma.toLocaleString()} karma</span>
+                                    </Badge>
+                                </div>
+                            </CardHeader>
+
+                            <CardContent className="space-y-6">
+                                <div className="flex flex-col sm:flex-row gap-6">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <CalendarDays className="h-4 w-4" />
+                                            <span>Joined {formatDate(user.created)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <FileText className="h-4 w-4" />
+                                            <span>{user.submitted?.length.toLocaleString() || 0} submissions</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-sm text-muted-foreground">
+                                        <span className="inline-block px-2.5 py-0.5 bg-secondary rounded-md">
+                                            Account age: {calculateAccountAge(user.created)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {user.about && (
+                                <div className="pt-4 border-t">
+                                    <h2 className="text-sm font-medium mb-2">About</h2>
+                                    <div
+                                        className="text-sm prose dark:prose-invert max-w-none prose-p:my-2 prose-a:text-primary"
+                                        dangerouslySetInnerHTML={createMarkup(user.about)}
+                                    />
+                                </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}                  
+
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold">Recent Submissions</h2>
+
+                            {loading && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span className="text-sm">Updating...</span>
+                                </div>
                             )}
                         </div>
-                    </div>
-                )}
-                    
-                {/* user submissions */}
-                <div className="mt-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Recent Submissions
-                    </h3>
-                    
-                    {userStories.length > 0 ? (
-                        <StoryList 
-                            stories={userStories} 
-                            onReadStory={handleReadStory}
-                            onToggleStar={handleToggleStar}
-                            onHideStory={handleHideStory}
-                        />
+
+                        {userStories.length > 0 ? (
+                            <StoryList
+                                stories={userStories}
+                                onReadStory={handleReadStory}
+                                onToggleStar={handleToggleStar}
+                                onHideStory={handleHideStory}
+                            />
                         ) : (
-                        <div className="text-center py-8 text-gray-600 dark:text-gray-400">
-                            No stories found from this user.
+                        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+                            <FileText className="h-12 w-12 mb-4 text-muted-foreground/50" />
+                            <h3 className="text-lg font-medium mb-1">No stories found</h3>
+                            <p className="text-sm max-w-md">
+                                This user hasn't submitted any stories yet, or all their submissions are comments.
+                            </p>
                         </div>
-                    )}
-                </div>
-            </>
-        )}
-    </div>
-)}
+                        )}
+                    </div>
+                </>
+            )}
+        </div>
+    )
+}
