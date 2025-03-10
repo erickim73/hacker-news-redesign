@@ -11,28 +11,69 @@ export const storiesService = {
 
         try {
             let ids: number[] = []
+
+            const initialFetchLimit = 100
         
             switch (type) {
                 case "top":
-                    ids = await HackerNewsAPI.getTopStoryIds()
+                    ids = await HackerNewsAPI.getTopStoryIds(initialFetchLimit)
                     break
                 case "new":
-                    ids = await HackerNewsAPI.getNewStoryIds()
+                    ids = await HackerNewsAPI.getNewStoryIds(initialFetchLimit)
                     break
                 case "best":
-                    ids = await HackerNewsAPI.getBestStoryIds()
+                    ids = await HackerNewsAPI.getBestStoryIds(initialFetchLimit)
                     break
                 case "starred":
                     ids = starredStories
                     break
                 default:
-                    ids = await HackerNewsAPI.getTopStoryIds()
+                    ids = await HackerNewsAPI.getTopStoryIds(initialFetchLimit)
             }
     
             console.log(`Fetched ${ids.length} story IDs for ${type}`)
             return ids
         } catch (error) {
             console.error("Error fetching stories:", error)
+            throw error
+        }
+    },
+
+    fetchMoreStoryIds: async (type: string, currentIds: number[], offset: number, limit: number) => {
+        console.log(`Fetching more story IDs for tab: ${type}, offset: ${offset}, limit: ${limit}`)
+        
+        try {
+            let newIds: number[] = []
+            
+            switch (type) {
+                case "top":
+                    newIds = await HackerNewsAPI.getTopStoryIds(limit, offset)
+                    break
+                case "new":
+                    newIds = await HackerNewsAPI.getNewStoryIds(limit, offset)
+                    break
+                case "best":
+                    newIds = await HackerNewsAPI.getBestStoryIds(limit, offset)
+                    break
+                case "starred":
+                    // No need to fetch more for starred stories as they're all in local storage
+                    return currentIds
+                default:
+                    newIds = await HackerNewsAPI.getTopStoryIds(limit, offset)
+            }
+            
+            // Combine with existing IDs, avoiding duplicates
+            const combinedIds = [...currentIds]
+            newIds.forEach(id => {
+                if (!combinedIds.includes(id)) {
+                    combinedIds.push(id)
+                }
+            })
+            
+            console.log(`Added ${newIds.length} more story IDs for ${type}`)
+            return combinedIds
+        } catch (error) {
+            console.error("Error fetching more story IDs:", error)
             throw error
         }
     },
@@ -66,6 +107,24 @@ export const storiesService = {
             const end = start + items_per_page
 
             // check if there are more stories to load
+            if (activeTab !== "starred" && start + items_per_page >= storyIds.length) {
+                // ADDED: FETCH MORE STORY IDs WHEN WE'RE CLOSE TO RUNNING OUT
+                console.log("Need to fetch more story IDs")
+                const moreIdsLimit = 100
+                const newStoryIds = await storiesService.fetchMoreStoryIds(
+                    activeTab, 
+                    storyIds, 
+                    storyIds.length, 
+                    moreIdsLimit
+                )
+                
+                // Update the store with the new IDs
+                store.dispatch({ 
+                    type: 'stories/setStoryIds', 
+                    payload: newStoryIds 
+                })
+            }
+
             if (start >= storyIds.length) {
                 dispatch(setHasMore(false))
                 return
