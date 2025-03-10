@@ -1,248 +1,234 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import HackerNewsAPI, { Story, Comment as CommentType } from '../../lib/api'
+import { useEffect, useState } from 'react'
+import HackerNewsAPI, { type Story } from '../../lib/api'
 import { useLocalStorage } from '../../lib/localStorage'
-import Comment from '../../components/Comments'
+import CommentSection from '../../components/CommentList'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ArrowLeft, CalendarDays, ExternalLink, MessageSquare, User } from "lucide-react"
 import Link from 'next/link'
 
-interface StoryDetailClientProps {
+interface StoryProps {
     storyId: string;
-  }
+}
 
-export default function StoryDetailClient({ storyId }: StoryDetailClientProps) {
-    const storyIdNumber = parseInt(storyId);
+export default function StoryDetail({ storyId }: StoryProps) {   
+    const storyIdNumber = Number(storyId)
 
-    // state for story and comments
     const [story, setStory] = useState<Story | null>(null)
-    const [comments, setComments] = useState<CommentType[]>([])
-    const [loading, setLoading] = useState<boolean>(true)
+    const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    
-    // load read and starred states from localStorage
-    const [readStories, setReadStories] = useLocalStorage<number[]>('readStories', [])
-    const [starredStories, setStarredStories] = useLocalStorage<number[]>('starredStories', [])
-    const [hiddenStories, setHiddenStories] = useLocalStorage<number[]>('hiddenStories', [])
-    
 
-    // get  story and comments on component mount
+    // local storage for read/starred states
+    const [readStories, setReadStories] = useLocalStorage<number[]>("readStories", [])
+    const [starredStories, setStarredStories] = useLocalStorage<number[]>("starredStories", [])
+
+    const [hasMarkedAsRead, setHasMarkedAsRead] = useState(false)
+
     useEffect(() => {
-        if (isNaN(storyIdNumber)) {
-            setError('Invalid story ID')
-            setLoading(false)
-            return
-        }
+        const fetchStory = async () => {
+            if (!storyIdNumber) return
         
-        fetchStoryAndComments()
-        
-        // mark as read 
-        if (!readStories.includes(storyIdNumber)) {
-            setReadStories([...readStories, storyIdNumber])
-        }
-    }, [storyIdNumber, hiddenStories])
-    
-    // get story and its comments
-    const fetchStoryAndComments = async () => {
-        try {
             setLoading(true)
-            
-            // get story
-            const fetchedStory = await HackerNewsAPI.getStory(storyIdNumber)
-            
-            if (!fetchedStory) {
-                setError('Story not found')
-                return
-            }
+            setError(null)
         
-            // add read and starred status to the story
-            const processedStory = {
-                ...fetchedStory,
-                isRead: true, 
-                isStarred: starredStories.includes(storyIdNumber),
-                isHidden: hiddenStories.includes(storyIdNumber)
-            }
+            try {
+                const storyData = await HackerNewsAPI.getStory(storyIdNumber)
         
-            setStory(processedStory)
-            
-            // get comments
-            if (fetchedStory.kids && fetchedStory.kids.length > 0) {
-                const fetchedComments = await HackerNewsAPI.getCommentsForStory(storyIdNumber)
-                setComments(fetchedComments)
-            }
-            } catch (error) {
-                setError('Failed to fetch story details. Please try again later.')
-                console.error('Error fetching story details:', error)
+                if (!storyData) {
+                    setError("Story not found")
+                    setLoading(false)
+                    return
+                }
+        
+                // mark as read
+                if (!readStories.includes(storyIdNumber) && !hasMarkedAsRead) {
+                    setReadStories([...readStories, storyIdNumber]);
+                    setHasMarkedAsRead(true);
+                }
+        
+                setStory({
+                    ...storyData,
+                    isRead: true,
+                    isStarred: starredStories.includes(storyIdNumber),
+                })
+            } catch (err) {
+                console.error("Error fetching story:", err)
+                setError("Failed to load story. Please try again later.")
             } finally {
                 setLoading(false)
+            }
         }
-    }
-  
-    // handler for starring or unstarring a story
-    const handleToggleStar = () => {
-        if (!story) return
-        
-        const isCurrentlyStarred = starredStories.includes(storyIdNumber)
-        
-        // update story in state
-        setStory({
-            ...story,
-            isStarred: !isCurrentlyStarred
-        })
-        
-        // update localStorage
-        if (isCurrentlyStarred) {
-            // remove from starred stories
-            setStarredStories(starredStories.filter(id => id !== storyIdNumber))
-        } else {
-            // add to starred stories
-            setStarredStories([...starredStories, storyIdNumber])
-        }
-    }
     
-    // hide story
-    const handleHideStory = () => {
-        if (!story) return
-        
-        // Add to hidden stories in localStorage
-        setHiddenStories([...hiddenStories, storyIdNumber])
-        
-        // Redirect to home page after hiding
-        window.location.href = '/'
-    }
+    fetchStory()
+    }, [storyIdNumber, readStories, starredStories, hasMarkedAsRead])
 
-    // format timestamp to a readable date
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
-        return date.toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        return date.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
         })
     }
-    
-    // render loading state
+
+    const formatUrl = (url?: string) => {
+        if (!url) return "self"
+        try {
+        const urlObj = new URL(url)
+        return urlObj.hostname.replace("www.", "")
+        } catch (error) {
+        console.error("Error getting URL: ", error)
+        return "link"
+        }
+    }
+
+    const handleToggleStar = () => {
+        if (!story) return
+
+            const isCurrentlyStarred = starredStories.includes(story.id)
+
+            // update story in state
+            setStory({
+            ...story,
+            isStarred: !isCurrentlyStarred,
+            })
+
+            // update local storage
+            if (isCurrentlyStarred) {
+            setStarredStories(starredStories.filter((id) => id !== story.id))
+            } else {
+            setStarredStories([...starredStories, story.id])
+        }
+    }
+
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+                <Button variant="ghost" size="sm" asChild className="mb-4">
+                    <Link href="/" className="flex items-center gap-1">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span>Back to stories</span>
+                    </Link>
+                </Button>
+        
+                <Card>
+                    <CardHeader className="space-y-2">
+                        <Skeleton className="h-8 w-3/4" />
+                        <div className="flex gap-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-32" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3 mt-2" />
+                    </CardContent>
+                </Card>
+        
+                <div className="space-y-4">
+                    <Skeleton className="h-6 w-32" />
+                    <div className="space-y-4">
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                        <Skeleton className="h-24 w-full rounded-lg" />
+                    </div>
+                </div>
             </div>
         )
     }
-    
-    // render error state
+
     if (error || !story) {
         return (
-            <div className="max-w-3xl mx-auto mt-10 p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-                <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h2>
-                <p className="text-gray-700 dark:text-gray-300">{error || 'Story not found'}</p>
-                <Link href="/" className="mt-4 inline-block bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded">
-                    Return to Home
+            <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+                <Button variant="ghost" size="sm" asChild className="mb-4">
+                <Link href="/" className="flex items-center gap-1">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Back to stories</span>
                 </Link>
+                </Button>
+        
+                <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">
+                    {error || "Story not found"}
+                </div>
             </div>
         )
     }
-  
-    return (
-        <div className="max-w-3xl mx-auto space-y-6">
-            {/* story header */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            {story.title}
-                        </h1>
-                        
-                        {/* story link */}
-                        {story.url && (
-                        <Link
-                            href={story.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:underline mb-4 inline-block"
-                        >
-                            {new URL(story.url).hostname.replace('www.', '')}
-                        </Link>
-                        )}
-                        
-                        {/* story metadata */}
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-3 flex flex-wrap gap-2">
-                            <span>{story.score} points</span>
-                            <span>by {story.by}</span>
-                            <span>{formatDate(story.time)}</span>
-                            <span>{story.descendants} comments</span>
-                        </div>
-                    </div>
-                
-                    {/* star button */}
-                    <button 
-                        onClick={handleToggleStar}
-                        className="ml-2 text-yellow-500 hover:text-yellow-600 focus:outline-none"
-                        aria-label={story.isStarred ? "Unstar this story" : "Star this story"}
-                    >
-                        <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-6 w-6" 
-                        fill={story.isStarred ? "currentColor" : "none"} 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                        >
-                            <path 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round" 
-                                strokeWidth={1.5} 
-                                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" 
-                            />
-                        </svg>
-                    </button>
 
-                    <button 
-                        onClick={handleHideStory}
-                        className="text-gray-500 hover:text-gray-600 focus:outline-none"
-                        aria-label="Hide this story"
+    return (
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+            <Button variant="ghost" size="sm" asChild className="mb-4">
+                <Link href="/" className="flex items-center gap-1">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Back to stories</span>
+                </Link>
+            </Button>
+    
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-2xl">{story.title}</CardTitle>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-2">
+                        {story.url && (
+                        <div className="flex items-center gap-1.5">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            <a
+                                href={story.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-primary hover:underline transition-colors"
+                            >
+                                {formatUrl(story.url)}
+                            </a>
+                        </div>
+                        )}
+        
+                    <div className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
+                        <Link href={`/user/${story.by}`} className="hover:text-primary hover:underline transition-colors">
+                            {story.by}
+                        </Link>
+                    </div>
+    
+                    <div className="flex items-center gap-1.5">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        <span>{formatDate(story.time)}</span>
+                    </div>
+    
+                    <div className="flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        <span>{story.descendants || 0} comments</span>
+                    </div>
+    
+                    <Button variant="ghost" size="sm" className="h-7 px-2 ml-auto" onClick={handleToggleStar}>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill={story.isStarred ? "currentColor" : "none"}
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={1.5}
                         >
-                        <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-6 w-6" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                        >
-                            <path 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round" 
-                                strokeWidth={1.5} 
-                                d="M6 18L18 6M6 6l12 12" 
+                            <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
                             />
                         </svg>
-                    </button>
+                        <span className="ml-1.5">{story.isStarred ? "Starred" : "Star"}</span>
+                    </Button>
                 </div>
-                
-                {/* story text content */}
+            </CardHeader>
+            <CardContent>
                 {story.text && (
-                    <div 
-                        className="mt-4 text-gray-800 dark:text-gray-200 prose dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: story.text }}
-                    />
-                    )}
-            </div>
-            
-            {/* comments section */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Comments ({story.descendants || 0})
-                </h2>
-                
-                {/* display comments */}
-                {comments.length > 0 ? (
-                <div className="space-y-4">
-                    {comments.map(comment => (
-                    <Comment key={comment.id} comment={comment} />
-                    ))}
-                </div>
-                ) : (<p className="text-gray-600 dark:text-gray-400">No comments yet.</p>)}
-            </div>
-        </div>
+                    <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: story.text }} />
+                )}
+            </CardContent>
+        </Card>
+    
+        <CommentSection storyId={story.id} commentCount={story.descendants} />
+    </div>
     )
 }

@@ -10,6 +10,10 @@
     --background-rgb: 248, 250, 252;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
+    --font-sans: "Helvetica Neue", Arial, sans-serif; 
+    --color-text: #d7dadc; 
+    --line-height: 1.5; 
+    --letter-spacing: 0.5px; 
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
@@ -41,64 +45,68 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
-  }
+}
 
-  @media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: dark) {
     :root {
-      --foreground-rgb: 255, 255, 255;
-      --background-rgb: 15, 23, 42;
+        --foreground-rgb: 255, 255, 255;
+        --background-rgb: 15, 23, 42;
     }
-  }
+}
 
-  body {
-    background-color: rgb(var(--background-rgb));
-  }
+html, body {
+    font-family: var(--font-sans);
+    color: var(--color-text);
+    line-height: var(--line-height);
+    letter-spacing: var(--letter-spacing);
+    background-color: var(--color-ui-canvas); /* Background color for dark mode */
+}
 
-  /* make links white in dark mode */
-  .dark a:not(.prose a) {
+/* make links white in dark mode */
+.dark a:not(.prose a) {
     color: inherit;
-  }
+}
 
-  /* make text content from the api render properly */
-  .prose pre {
+/* make text content from the api render properly */
+.prose pre {
     white-space: pre-wrap;
     overflow-wrap: break-word;
-  }
+}
 
-  /* special styling for collapsible comments */
-  .comment-collapsed .comment-content,
-  .comment-collapsed .comment-children {
+/* special styling for collapsible comments */
+.comment-collapsed .comment-content,
+.comment-collapsed .comment-children {
     display: none;
-  }
+}
 
-  /* infinite scrolling loading indicator */
-  .infinite-scroll-loading {
+/* infinite scrolling loading indicator */
+.infinite-scroll-loading {
     display: flex;
     justify-content: center;
     margin: 2rem 0;
-  }
+}
 
-  /* story item hover effect */
-  .story-item {
+/* story item hover effect */
+.story-item {
     transition: transform 0.2s, box-shadow 0.2s;
-  }
+}
 
-  .story-item:hover {
+.story-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
+}
 
-  /* add smooth transitions for UI elements */
-  button, a {
+/* add smooth transitions for UI elements */
+button, a {
     transition: all 0.2s ease-in-out;
-  }
+}
 
-  /* code blocks in comments are readable */
-  .prose code {
+/* code blocks in comments are readable */
+.prose code {
     @apply bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm;
-  }
+}
 
-  .dark {
+.dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.145 0 0);
@@ -133,7 +141,7 @@
     --sidebar-ring: oklch(0.439 0 0);
 }
 
-  @theme inline {
+@theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-card: var(--card);
@@ -172,11 +180,11 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
-  @layer base {
-  * {
+@layer base {
+* {
     @apply border-border outline-ring/50;
-    }
-  body {
+}
+body {
     @apply bg-background text-foreground;
-    }
+}
 }

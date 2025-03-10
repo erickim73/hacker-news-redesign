@@ -1,10 +1,14 @@
-import StoryDetailClient from "./client";
+import StoryDetailWrapper from './StoryDetailWrapper';
 
-export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
-    // Await and resolve the params
-    const resolvedParams = await params;
-    const storyId = resolvedParams.id;
-    
-    // Render the client component with the resolved ID
-    return <StoryDetailClient storyId={storyId} />;
-  }
+type Props = {
+    params: Promise<{
+        id: string
+    }> | {
+        id: string
+    }
+}
+
+export default async function StoryPage({ params }: Props) {
+    const resolvedParams = await Promise.resolve(params);
+    return <StoryDetailWrapper id={resolvedParams.id} />;
+}
