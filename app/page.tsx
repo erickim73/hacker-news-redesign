@@ -169,19 +169,23 @@ export default function HomePage() {
     }, [dispatch])
 
     useEffect(() => {
-        console.log("Updating readStories in localStorage")
-        localStorage.setItem('readStories', JSON.stringify(readStories))
-    }, [readStories])
-
-    useEffect(() => {
-        console.log("Updating starredStories in localStorage")
-        localStorage.setItem('starredStories', JSON.stringify(starredStories))
-    }, [starredStories])
-
-    useEffect(() => {
-        console.log("Updating hiddenStories in localStorage")
-        localStorage.setItem('hiddenStories', JSON.stringify(hiddenStories))
-    }, [hiddenStories])
+        console.log("Batch updating localStorage with all story data")
+        
+        // Create a function to handle all localStorage updates at once
+        const updateLocalStorage = () => {
+            localStorage.setItem('readStories', JSON.stringify(readStories))
+            localStorage.setItem('starredStories', JSON.stringify(starredStories))
+            localStorage.setItem('hiddenStories', JSON.stringify(hiddenStories))
+        }
+        
+        // Use requestIdleCallback if available for non-blocking updates
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            window.requestIdleCallback(() => updateLocalStorage())
+        } else {
+            // Fallback to setTimeout if requestIdleCallback is not available
+            setTimeout(updateLocalStorage, 0)
+        }
+    }, [readStories, starredStories, hiddenStories])
 
     const renderTabContent = useCallback((tabValue: TabValue) => (
         <TabsContent value={tabValue} className="space-y-6">

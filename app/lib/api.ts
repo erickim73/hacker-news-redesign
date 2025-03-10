@@ -38,30 +38,31 @@ export interface User {
 }
 
 const HackerNewsAPI = {
-    async getTopStoryIds(): Promise<number[]>{
+    async getTopStoryIds(limit?: number, offset: number = 0): Promise<number[]>{
         try {
             const response = await axios.get(`${base_url}/topstories.json`)
-            return response.data
+            return limit ? response.data.slice(offset, offset + limit) : response.data
         } catch (error) {
             console.error('Error fetching top stories:', error)
             return []
         }
     },
 
-    async getNewStoryIds(): Promise<number[]>{
+    async getNewStoryIds(limit?: number, offset: number = 0): Promise<number[]>{
         try {
             const response = await axios.get(`${base_url}/newstories.json`)
-            return response.data
+            return limit ? response.data.slice(offset, offset + limit) : response.data
+
         } catch (error) {
             console.error('Error fetching new stories:', error)
             return []
         }
     },
 
-    async getBestStoryIds(): Promise<number[]>{
+    async getBestStoryIds(limit?: number, offset: number = 0): Promise<number[]>{
         try {
             const response = await axios.get(`${base_url}/beststories.json`)
-            return response.data
+            return limit ? response.data.slice(offset, offset + limit) : response.data
         } catch (error) {
             console.error('Error fetching best stories:', error)
             return []
