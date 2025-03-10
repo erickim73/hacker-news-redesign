@@ -8,6 +8,10 @@ interface CommentState {
     visibleComments: number;
     expandedComments: Record<string, boolean>
     loadingComments: Record<string | number, boolean>;
+    allCommentIds: number[];
+    loadedCommentBatches: number;
+    commentsPerBatch: number;
+    maxVisibleDepth: number;
 }
 
 const initialState: CommentState = {
@@ -17,6 +21,10 @@ const initialState: CommentState = {
     visibleComments: 10,
     expandedComments: {},
     loadingComments: {},
+    allCommentIds: [],
+    loadedCommentBatches: 1,
+    commentsPerBatch: 10,
+    maxVisibleDepth: 4,
 }
 
 export const commentsSlice = createSlice ({
@@ -90,10 +98,50 @@ export const commentsSlice = createSlice ({
             
             // try to update the comment in the tree
             updateCommentInTree(state.comments, commentId, replies)
-        }
+        },
+
+        setAllCommentIds: (state, action: PayloadAction<number[]>) => {
+            state.allCommentIds = action.payload;
+        },
+
+        appendComments: (state, action: PayloadAction<CommentType[]>) => {
+            state.comments = [...state.comments, ...action.payload];
+        },
+
+        increaseLoadedBatches: (state) => {
+            state.loadedCommentBatches += 1;
+        },
+
+        resetLoadedBatches: (state) => {
+            state.loadedCommentBatches = 1;
+        },
+
+        setCommentsPerBatch: (state, action: PayloadAction<number>) => {
+            state.commentsPerBatch = action.payload;
+        },
+
+        setCommentLoading: (state, action: PayloadAction<{ commentId: number, isLoading: boolean }>) => {
+            state.loadingComments = {
+              ...state.loadingComments,
+              [action.payload.commentId]: action.payload.isLoading
+            };
+        },
     }
 })
 
-export const { setComments, setLoading, setError, increaseVisibleComments,resetCommentState, toggleCommentExpansion, setAllCommentsExpanded, updateCommentReplies} = commentsSlice.actions;
-
+export const { 
+    setComments, 
+    setLoading, 
+    setError, 
+    increaseVisibleComments,
+    resetCommentState, 
+    toggleCommentExpansion, 
+    setAllCommentsExpanded, 
+    updateCommentReplies,
+    setAllCommentIds,
+    appendComments,
+    increaseLoadedBatches,
+    resetLoadedBatches,
+    setCommentsPerBatch
+} = commentsSlice.actions;
 export default commentsSlice.reducer;

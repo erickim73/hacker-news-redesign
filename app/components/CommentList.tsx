@@ -17,11 +17,17 @@ interface CommentSectionProps {
     commentCount?: number
 }
 
+const default_initial_comments = 10; 
+const default_comments_per_batch = 10; 
+
 const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount = 0 }) => {
     const comments = useSelector((state: RootState) => state.comments.comments)
     const loading = useSelector((state: RootState) => state.comments.loading)
     const error = useSelector((state: RootState) => state.comments.error)
     const visibleComments = useSelector((state: RootState) => state.comments.visibleComments)
+
+    const comments_per_batch = useSelector((state: RootState) => 
+        state.comments.commentsPerBatch || default_comments_per_batch)
 
     const dispatch = useDispatch<AppDispatch>()
 
@@ -33,9 +39,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     const loadMoreComments = useCallback(() => {
         // don't't load more if we're already loading or all comments are visible
         if (!loading && visibleComments < comments.length) {
-            dispatch(increaseVisibleComments(10))
+            dispatch(increaseVisibleComments(comments_per_batch))
+
+            dispatch({ type: 'comments/increaseLoadedBatches' })
         }
-    }, [dispatch, loading, visibleComments, comments.length])
+    }, [dispatch, loading, visibleComments, comments.length, comments_per_batch])
 
     useInfiniteScroll(loadMoreComments, {
         // only enable infinite scrolling when there are more comments to load
@@ -50,6 +58,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
             dispatch(setError(null))
             dispatch(resetCommentState())
             commentsLoadedRef.current = false
+            dispatch({ type: 'comments/resetLoadedBatches' })
         }
     }, [storyId, dispatch])
 
@@ -79,7 +88,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
                 return
             }
 
-            const topLevelCommentIds = story.kids.slice(0, 50)
+            const initialCommentBatchSize = Math.min(default_initial_comments, story.kids.length)
+            const topLevelCommentIds = story.kids.slice(0, initialCommentBatchSize)
+
+            const allCommentIds = story.kids
 
             const commentPromises = topLevelCommentIds.map(async (id: number) => {
                 try {
@@ -107,6 +119,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
         // only update state if the component is still mounted
         if (!signal.aborted) {
             dispatch(setComments(topLevelComments))
+            dispatch({ 
+                type: 'comments/setAllCommentIds', 
+                payload: allCommentIds 
+            })
             commentsLoadedRef.current = true
         }
         } catch (err) {
@@ -129,8 +145,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     return () => {
         controller.abort()
     }
-}, [storyId, dispatch]) // only re-run if storyId changes
+    }, [storyId, dispatch, comments_per_batch]) // only re-run if storyId changes
 
+    
     if (loading && comments.length === 0) {
         return (
             <div className="space-y-4 mt-6">
@@ -177,7 +194,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
             <h2 className="text-xl font-semibold mb-4">Comments ({commentCount || comments.length})</h2>
             <div className="space-y-4">
                 {displayedComments.map((comment) => (
-                    <Comment key={comment.id} comment={comment} />
+                    <Comment 
+                        key={comment.id} 
+                        comment={comment} 
+                        initiallyVisible={true} 
+                    />
                 ))}
             </div>
 
@@ -197,7 +218,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
                     onClick={loadMoreComments}
                     className="mt-4 w-full py-2 border border-border rounded-md text-sm hover:bg-muted transition-colors"
                 >
-                    Load more comments
+                    {comments.length - visibleComments} more comments
                 </button>
             )}
 

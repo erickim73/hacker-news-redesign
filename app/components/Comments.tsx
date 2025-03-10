@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react'
 import {Comment as CommentType} from '../lib/api'
 import { cn } from '../lib/utils'
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Clock, User } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, User, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useDispatch, useSelector } from "react-redux"
 import { RootState } from '../redux/store'
@@ -13,12 +13,17 @@ import axios from 'axios';
 interface CommentProps {
     comment: CommentType;
     depth?: number
+    initiallyVisible?: boolean;
 }
 
 const selectExpandedComments = (state: RootState) => state.comments.expandedComments
 const selectLoadingComments = (state: RootState) => state.comments.loadingComments || {}
 
-const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
+const max_visible_depth = 4
+const max_visible_replies = 3
+
+
+const Comment: React.FC<CommentProps> = ({comment, depth = 0, initiallyVisible = depth <max_visible_depth}) => {
     const dispatch = useDispatch()
 
     const selectThisCommentExpanded = useMemo(
@@ -42,6 +47,8 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
     const base_url = "https://hacker-news.firebaseio.com/v0"
 
     useEffect(() => {
+        if (!initiallyVisible) return 
+        
         // only fetch if expanded, has unloaded replies, and we're not too deep
         if (expanded && comment.hasUnloadedReplies && comment.kids && depth < 10) {
             dispatch({ 
@@ -207,6 +214,35 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
         )
     }
 
+    const formatCollapsedText = (htmlText: string) => {
+        if (!htmlText) return "No content";
+        
+        // create temporary element to handle HTML parsing
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlText;
+        
+        // get text content which preserves proper spacing and punctuation
+        const textContent = tempDiv.textContent || tempDiv.innerText || "";
+        
+        return textContent.trim();
+    }
+
+    const shouldShowMoreRepliesButton = () => {
+        if (!comment.replies) return false;
+        
+        return comment.replies.length > max_visible_replies
+    }
+
+    const getHiddenReplyCount = () => {
+        if (!comment.replies) return 0;
+        return comment.replies.length - max_visible_replies
+    }
+
+    const visibleReplies = comment.replies ? 
+        comment.replies.slice(0, max_visible_replies) : 
+        [];
+
+
 
     return (
         <div className={cn("relative group", getIndentClass(indentLevel))}>
@@ -266,7 +302,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                                 onClick={toggleExpanded}
                             >
                                 {comment.text ? (
-                                    <span>{comment.text.replace(/<[^>]*>/g, "").trim()}</span>
+                                    <span>{formatCollapsedText(comment.text)}</span>
                                 ) : (
                                     <span className="italic">No content</span>
                                 )}
@@ -277,9 +313,49 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                 {/* nested replies */}
                 {expanded && comment.replies && comment.replies.length > 0 && (
                     <div className="mt-2 space-y-3">
-                        {comment.replies.map((reply) => (
-                            <Comment key={reply.id} comment={reply} depth={depth + 1} />
+                        {visibleReplies.map((reply) => (
+                            <Comment 
+                                key={reply.id} 
+                                comment={reply} 
+                                depth={depth + 1} 
+                                initiallyVisible={depth + 1 < max_visible_depth}
+                            />
                         ))}
+                    </div>
+                )}
+
+                {expanded && shouldShowMoreRepliesButton() && (
+                    <div className="pl-4 pt-2">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs text-primary flex items-center gap-1.5" 
+                            onClick={() => {
+                                dispatch({
+                                    type: 'comments/showAllReplies',
+                                    payload: { commentId: comment.id }
+                                });
+                            }}
+                        >
+                            <PlusCircle className="h-3.5 w-3.5" />
+                            {getHiddenReplyCount()} more {getHiddenReplyCount() === 1 ? 'reply' : 'replies'}
+                        </Button>
+                    </div>
+                )}
+
+                {expanded && depth >= max_visible_depth - 1 && comment.hasUnloadedReplies && (
+                    <div className="pl-4 pt-2">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs text-primary flex items-center gap-1.5" 
+                            onClick={() => {
+                                dispatch(toggleCommentExpansion(comment.id));
+                            }}
+                        >
+                            <PlusCircle className="h-3.5 w-3.5" />
+                            Continue this thread
+                        </Button>
                     </div>
                 )}
 
