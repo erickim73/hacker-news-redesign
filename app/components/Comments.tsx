@@ -255,26 +255,13 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                 </div>
                 
                 {/* comment content */}
-                {expanded ? (
+                {expanded && (
                     <div
-                        className="text-[15px] leading-relaxed text-foreground/90  prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-a:text-primary"
+                        className="text-[15px] leading-relaxed text-gray-800 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-a:text-primary"
                         dangerouslySetInnerHTML={comment.text ? createMarkup(comment.text) : { __html: "<em>No content</em>" }}
                     />
-                        ) : (
-                            <div 
-                                className="text-sm text-foreground/80 line-clamp-1 cursor-pointer hover:text-foreground/100" 
-                                onClick={toggleExpanded}
-                            >
-                                {comment.text ? (
-                                    <span>{comment.text.replace(/<[^>]*>/g, "").trim()}</span>
-                                ) : (
-                                    <span className="italic">No content</span>
-                                )}
-                            </div>
                 )}
 
-                
-                {/* nested replies */}
                 {expanded && comment.replies && comment.replies.length > 0 && (
                     <div className="mt-2 space-y-3">
                         {comment.replies.map((reply) => (
