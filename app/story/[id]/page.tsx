@@ -1,14 +1,8 @@
 import StoryDetailWrapper from './StoryDetailWrapper';
 
-type Props = {
-    params: Promise<{
-        id: string
-    }> | {
-        id: string
-    }
-}
+type tParams = Promise<{ id: string }>;
 
-export default async function StoryPage({ params }: Props) {
-    const resolvedParams = await Promise.resolve(params);
-    return <StoryDetailWrapper id={resolvedParams.id} />;
+export default async function StoryPage(props: { params: tParams }) {
+    const { id } = await props.params;
+    return <StoryDetailWrapper id={id} />;
 }
