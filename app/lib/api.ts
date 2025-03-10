@@ -2,7 +2,6 @@ import axios from 'axios';
 
 const base_url = 'https://hacker-news.firebaseio.com/v0'
 
-// interface for hacker news stories
 export interface Story {
     id: number; 
     title: string; 
@@ -17,7 +16,6 @@ export interface Story {
     isStarred?: boolean;
 }
 
-// interface for hacker news comments
 export interface Comment {
     id: number;
     text?: string;
@@ -31,7 +29,6 @@ export interface Comment {
     hasUnloadedReplies?: boolean
   }
 
-//   interface for hacker news users
 export interface User {
     id: string;
     created: number;
@@ -40,9 +37,7 @@ export interface User {
     submitted?: number[];
 }
 
-// main api methods
 const HackerNewsAPI = {
-    // gets id of top stories 
     async getTopStoryIds(): Promise<number[]>{
         try {
             const response = await axios.get(`${base_url}/topstories.json`)
@@ -53,7 +48,6 @@ const HackerNewsAPI = {
         }
     },
 
-    // gets id of new stories
     async getNewStoryIds(): Promise<number[]>{
         try {
             const response = await axios.get(`${base_url}/newstories.json`)
@@ -64,7 +58,6 @@ const HackerNewsAPI = {
         }
     },
 
-    // gets id of best stories
     async getBestStoryIds(): Promise<number[]>{
         try {
             const response = await axios.get(`${base_url}/beststories.json`)
@@ -75,7 +68,6 @@ const HackerNewsAPI = {
         }
     },
 
-    // get story with id
     async getStory(id: number): Promise<Story | null> {
         try {
             const response = await axios.get(`${base_url}/item/${id}.json`)
@@ -86,7 +78,6 @@ const HackerNewsAPI = {
         }
     },
 
-    // get multiple story with ids
     async getStoriesByIds(ids: number[], start = 0, end = 30): Promise<Story[]> {
         const pageIds = ids.slice(start, end)
         
@@ -102,7 +93,6 @@ const HackerNewsAPI = {
         }
     },
 
-    // get comment by id
     async getComment(id: number): Promise<Comment | null> {
         try{
             const response = await axios.get(`${base_url}/item/${id}.json`)
@@ -113,7 +103,6 @@ const HackerNewsAPI = {
         }
     },
     
-    // gets comments for story, up to specified depth
     async getCommentsForStory(storyId: number, maxDepth = 2): Promise<Comment[]> {
         try {
           const story = await this.getStory(storyId);
@@ -159,7 +148,6 @@ const HackerNewsAPI = {
             }
       },
 
-    //   get user information
     async getUser(username: string): Promise<User | null> {
         try {
             const response = await axios.get(`${base_url}/user/${username}.json`)

@@ -41,7 +41,7 @@ export const commentsSlice = createSlice ({
 
         toggleCommentExpansion: (state, action: PayloadAction<string | number>) => {
             const commentId = action.payload;
-            // If not explicitly set (undefined) or true, it's considered expanded
+            // if not explicitly set (undefined) or true, it's considered expanded
             const currentlyExpanded = state.expandedComments[commentId] !== false;
             state.expandedComments[commentId] = !currentlyExpanded;
         },
@@ -66,29 +66,29 @@ export const commentsSlice = createSlice ({
         updateCommentReplies: (state, action: PayloadAction<{ commentId: number, replies: CommentType[] }>) => {
             const { commentId, replies } = action.payload
             
-            // Helper function to find and update a comment in the nested structure
+            // helper function to find and update a comment in the nested structure
             const updateCommentInTree = (comments: CommentType[], targetId: number, newReplies: CommentType[]): boolean => {
                 for (let i = 0; i < comments.length; i++) {
                     if (comments[i].id === targetId) {
-                        // Found the comment, update it
+                        // found the comment, update it
                         comments[i].replies = newReplies
                         comments[i].hasUnloadedReplies = false
                         return true
                     }
                     
-                    // Check if this comment has replies to recursively search
+                    // check if this comment has replies to recursively search
                     if (comments[i].replies?.length) {                        
-                        // Recursively search in the replies
+                        // recurisvely search in the replies
                         if (updateCommentInTree(comments[i].replies!, targetId, newReplies)) {
                             return true
                         }
                     }
                 }
                 
-                return false // Not found in this branch
+                return false // not found in this branch
             }
             
-            // Try to update the comment in the tree
+            // try to update the comment in the tree
             updateCommentInTree(state.comments, commentId, replies)
         }
     }

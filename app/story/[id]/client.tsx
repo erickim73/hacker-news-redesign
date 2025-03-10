@@ -62,22 +62,22 @@ export default function StoryDetail({ storyId }: StoryProps) {
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
         return date.toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
         })
     }
 
     const formatUrl = (url?: string) => {
         if (!url) return "self"
         try {
-        const urlObj = new URL(url)
-        return urlObj.hostname.replace("www.", "")
+            const urlObj = new URL(url)
+            return urlObj.hostname.replace("www.", "")
         } catch (error) {
-        console.error("Error getting URL: ", error)
-        return "link"
+            console.error("Error getting URL: ", error)
+            return "link"
         }
     }
 

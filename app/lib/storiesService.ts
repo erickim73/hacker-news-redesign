@@ -65,13 +65,13 @@ export const storiesService = {
             const start = (page - 1) * items_per_page
             const end = start + items_per_page
 
-            // Check if there are more stories to load
+            // check if there are more stories to load
             if (start >= storyIds.length) {
                 dispatch(setHasMore(false))
                 return
             }
 
-            // Get visible story IDs (not hidden)
+            // get visible story IDs (not hidden)
             const hiddenStories = state.hiddenStories
             const visibleStoryIds = storyIds.filter((id: number) => !hiddenStories.includes(id))
             

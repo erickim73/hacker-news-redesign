@@ -9,7 +9,7 @@ import commentsReducer from './commentsSlice'
 const persistConfig = {
     key: 'hackernews',
     storage,
-    // Only persist these keys
+    // only persist these keys
     whitelist: ['readStories', 'starredStories', 'hiddenStories'],
 };
 
@@ -21,11 +21,10 @@ export const store = configureStore({
         user: userReducer,
         comments: commentsReducer, 
     },
-    // Recommended middleware setup
+    // recommend middleware setup
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
-            // Ignore these action types for serializability check
             ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
             },
         }),

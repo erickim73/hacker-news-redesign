@@ -92,6 +92,7 @@ export default function HomePage() {
     
     useInfiniteScroll(fetchStories, infiniteScrollConfig)
 
+
     const handleReadStory = useCallback((storyId: number) => {
         console.log(`Marking story ${storyId} as read`)
         // update story in state
@@ -106,6 +107,7 @@ export default function HomePage() {
             dispatch(setReadStories([...readStories, storyId]))
         }
     }, [stories, readStories, dispatch])
+    
 
     const handleToggleStar = useCallback((storyId: number) => {
         const isCurrentlyStarred = starredStories.includes(storyId)

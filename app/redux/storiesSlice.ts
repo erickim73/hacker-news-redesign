@@ -85,12 +85,12 @@ const storiesSlice = createSlice({
                 state.readStories.push(storyId);
             }
             
-            // Update currentStory if it's loaded
+            // update currentStory if it's loaded
             if (state.currentStory && state.currentStory.id === storyId) {
                 state.currentStory.isRead = true;
             }
             
-            // Update any matching story in the stories array
+            // update any matching story in the stories array
             state.stories = state.stories.map(story => 
                 story.id === storyId ? {...story, isRead: true} : story
             );
@@ -101,24 +101,24 @@ const storiesSlice = createSlice({
             const isCurrentlyStarred = state.starredStories.includes(storyId);
             
             if (isCurrentlyStarred) {
-                // Remove from starred stories
+                // remove from starred stories
                 state.starredStories = state.starredStories.filter(id => id !== storyId);
             } else {
-                // Add to starred stories
+                // add to starred stories
                 state.starredStories.push(storyId);
             }
 
-            // Update currentStory if it's loaded
+            // update currentStory if it's loaded
             if (state.currentStory && state.currentStory.id === storyId) {
                 state.currentStory.isStarred = !isCurrentlyStarred;
             }
             
-            // Update any matching story in the stories array
+            // update any matching story in the stories array
             state.stories = state.stories.map(story => 
                 story.id === storyId ? {...story, isStarred: !isCurrentlyStarred} : story
             );
             
-            // Remove from stories list if in starred tab and unstarring
+            // remove from stories list if in starred tab and unstarring
             if (state.activeTab === "starred" && isCurrentlyStarred) {
                 state.stories = state.stories.filter(story => story.id !== storyId);
             }
@@ -127,12 +127,12 @@ const storiesSlice = createSlice({
         hideStory: (state, action) => {
             const storyId = action.payload;
             
-            // Add to hidden stories if not already there
+            // add to hidden stories if not already there
             if (!state.hiddenStories.includes(storyId)) {
                 state.hiddenStories.push(storyId);
             }
             
-            // Remove from stories list
+            // remove from stories list
             state.stories = state.stories.filter(story => story.id !== storyId);
           },
     },

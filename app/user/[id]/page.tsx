@@ -135,10 +135,10 @@ export default function UserPage() {
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
         return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-        })
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+            })
     }
   
     // calculate account age

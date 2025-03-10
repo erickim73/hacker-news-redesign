@@ -39,10 +39,10 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
 
     const expanded = useSelector(selectThisCommentExpanded)
     const isLoadingReplies = useSelector(selectThisCommentLoading)
-    const BASE_URL = "https://hacker-news.firebaseio.com/v0"
+    const base_url = "https://hacker-news.firebaseio.com/v0"
 
     useEffect(() => {
-        // Only fetch if expanded, has unloaded replies, and we're not too deep
+        // only fetch if expanded, has unloaded replies, and we're not too deep
         if (expanded && comment.hasUnloadedReplies && comment.kids && depth < 10) {
             dispatch({ 
                 type: 'comments/setCommentLoading', 
@@ -70,7 +70,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                     
                     const replyPromises = comment.kids ? comment.kids.map(async (id: number) => {
                         try {
-                            const response = await fetchWithTimeout(`${BASE_URL}/item/${id}.json`)
+                            const response = await fetchWithTimeout(`${base_url}/item/${id}.json`)
                             const replyData = response.data
                             
                             if (!replyData || replyData.deleted || replyData.dead) return null
@@ -93,7 +93,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                         .map(result => (result as PromiseFulfilledResult<CommentType>).value)
                     
                     
-                    // Update the Redux store with these replies
+                    // update redux store with these replies
                     dispatch(updateCommentReplies({ commentId: comment.id, replies }))
                     
                 } catch (error) {
@@ -189,7 +189,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
 
         let count = comment.replies.length
         for (const reply of comment.replies) {
-        count += getReplyCount(reply)
+            count += getReplyCount(reply)
         }
         return count
     }
@@ -278,7 +278,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                 {expanded && comment.replies && comment.replies.length > 0 && (
                     <div className="mt-2 space-y-3">
                         {comment.replies.map((reply) => (
-                        <Comment key={reply.id} comment={reply} depth={depth + 1} />
+                            <Comment key={reply.id} comment={reply} depth={depth + 1} />
                         ))}
                     </div>
                 )}
@@ -286,7 +286,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                 {expanded && ((comment.hasUnloadedReplies && (!comment.replies || comment.replies.length === 0)) || isLoadingReplies) && (
                     <div className="mt-2 flex items-center text-sm text-muted-foreground">
                         <div className="h-3 w-3 mr-2 rounded-full bg-primary/30 animate-pulse"></div>
-                        Loading replies... {/* Will show for a maximum of 5 seconds due to fetch timeout */}
+                        Loading replies... 
                     </div>
                 )}
             </div>

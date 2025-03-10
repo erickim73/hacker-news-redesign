@@ -18,7 +18,6 @@ const StoryItem: React.FC<StoryItemProps> = ({
     onToggleStar,
     onHideStory
 }) => {
-    // format timestamp to easy to read format
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
         return date.toLocaleDateString('en-US', {
@@ -30,7 +29,6 @@ const StoryItem: React.FC<StoryItemProps> = ({
         })
     }
 
-    // format URL for display
     const formatUrl = (url?: string) => {
         if (!url) return 'self'
         try {
@@ -42,7 +40,6 @@ const StoryItem: React.FC<StoryItemProps> = ({
         }
     }
 
-    // handle clicking on story
     const handleClick = () => {
         onReadStory(story.id)
 
@@ -52,21 +49,17 @@ const StoryItem: React.FC<StoryItemProps> = ({
         }
     }
 
-    // handle clicking on star
     const handleStarClick = (e: React.MouseEvent) => {
         // prevent click from bubbling up to parent, opening story
         e.stopPropagation()
 
-        // toggle star
         onToggleStar(story.id)
     }
 
-    // handle hiding a story
     const handleHideStory = (e: React.MouseEvent) => {
         // prevent click from bubbling up to parent, opening story
         e.stopPropagation()
 
-        // hide
         onHideStory(story.id)
     }
 
@@ -88,13 +81,7 @@ const StoryItem: React.FC<StoryItemProps> = ({
             <div className="flex items-start gap-4">
                 <div className="flex-1 space-y-2">
                     <div className = 'flex items-start justify-between gap-2'>
-                        {/* story title */}
-                        <h3 
-                            className={cn(
-                                "text-lg font-medium leading-tight",
-                                story.isRead ? "text-muted-foreground" : "text-foreground",
-                            )}
-                        >
+                        <h3 className={cn("text-lg font-medium leading-tight",story.isRead ? "text-muted-foreground" : "text-foreground",)}>
                             {story.title}
                         </h3>
 
@@ -108,7 +95,7 @@ const StoryItem: React.FC<StoryItemProps> = ({
                                 : "text-muted-foreground hover:text-yellow-500",
                             )}
                             aria-label={story.isStarred ? "Unstar this story" : "Star this story"}
-                            >
+                        >
                             {/* star icon */}
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -129,21 +116,18 @@ const StoryItem: React.FC<StoryItemProps> = ({
 
                     {/* story metadata */}
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                        {/* external link */}
                         {story.url && (
-                        <div className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded text-xs font-medium">
-                            <ExternalLink className="h-3 w-3" />
-                            <span>{formatUrl(story.url)}</span>
-                        </div>
+                            <div className="flex items-center gap-1 bg-muted px-2 py-0.5 rounded text-xs font-medium">
+                                <ExternalLink className="h-3 w-3" />
+                                <span>{formatUrl(story.url)}</span>
+                            </div>
                         )}
 
-                        {/* story score */}
                         <div className="flex items-center gap-1">
                             <span className="font-medium text-primary">{story.score}</span>
                             <span>points</span>
                         </div>
 
-                        {/* author link */}
                         <div className="flex items-center gap-1.5">
                             <User className="h-3.5 w-3.5" />
                             <Link
@@ -155,13 +139,11 @@ const StoryItem: React.FC<StoryItemProps> = ({
                             </Link>
                         </div>
 
-                        {/* timestamp */}
                         <div className="flex items-center gap-1.5">
                             <CalendarDays className="h-3.5 w-3.5" />
                             <span>{formatDate(story.time)}</span>
                         </div>
 
-                        {/* comments link */}
                         {story.descendants !== undefined && (
                             <Link
                                 href={`/story/${story.id}`}
@@ -175,7 +157,6 @@ const StoryItem: React.FC<StoryItemProps> = ({
                             </Link>
                         )}
 
-                        {/* hide story button */}
                         <button
                             onClick={handleHideStory}
                             className="flex items-center gap-1.5 hover:text-primary hover:underline transition-colors"

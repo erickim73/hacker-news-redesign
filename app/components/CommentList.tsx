@@ -28,7 +28,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     // track if comments have been loaded
     const commentsLoadedRef = useRef(false)
 
-    const BASE_URL = "https://hacker-news.firebaseio.com/v0"
+    const base_url = "https://hacker-news.firebaseio.com/v0"
 
     const loadMoreComments = useCallback(() => {
         // don't't load more if we're already loading or all comments are visible
@@ -69,7 +69,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
 
 
             // fetch the story to get comment IDs
-            const storyResponse = await axios.get(`${BASE_URL}/item/${storyId}.json`, { signal })
+            const storyResponse = await axios.get(`${base_url}/item/${storyId}.json`, { signal })
             const story = storyResponse.data
 
             if (!story || !story.kids || story.kids.length === 0) {
@@ -83,7 +83,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
 
             const commentPromises = topLevelCommentIds.map(async (id: number) => {
                 try {
-                    const response = await axios.get(`${BASE_URL}/item/${id}.json`, { signal })
+                    const response = await axios.get(`${base_url}/item/${id}.json`, { signal })
                     const comment = response.data
                     
                     if (!comment || comment.deleted || comment.dead) return null
@@ -141,7 +141,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-4 w-32" />
                     </div>
-                    <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
                     </div>
                 ))}
             </div>
@@ -203,15 +203,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
 
             {visibleComments >= comments.length && comments.length > 0 && (
                 <div className="mt-6 text-center text-sm text-muted-foreground">
-                    All comments loaded
+                    All {commentCount} comments loaded
                 </div>
-            )}
-
-            {commentCount > comments.length && (
-                <div className="mt-6 text-center text-sm text-muted-foreground">
-                Showing {comments.length} of {commentCount} comments
-                </div>
-            )}
+            )}            
         </div>
     )
 }

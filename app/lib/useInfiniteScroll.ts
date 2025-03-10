@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 export function useInfiniteScroll(
     callback: () => void,
     options: {
-        threshold?: number // distance from bottom to trigger callback 
-        disabled?: boolean // if disable infinite scrolling
+        threshold?: number 
+        disabled?: boolean 
     } = {}
 ) {
     const { threshold = 300, disabled = false } = options
@@ -16,7 +16,6 @@ export function useInfiniteScroll(
         if (disabled) return
         
         const handleScroll = () => {
-        // check if near bottom of page
             const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
             const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight
             const clientHeight = document.documentElement.clientHeight || window.innerHeight
