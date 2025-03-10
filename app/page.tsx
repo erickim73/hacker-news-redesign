@@ -7,20 +7,9 @@ import { useInfiniteScroll } from './lib/useInfiniteScroll'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Bookmark, Star, TrendingUp, Zap } from "lucide-react"
+import { Star, TrendingUp, Zap } from "lucide-react"
 import store from './redux/store'
-import { 
-    setStories, 
-    setLoading, 
-    setError, 
-    setActiveTab,
-    setHasMore,
-    setPage,
-    setStoryIds,
-    setReadStories,
-    setStarredStories,
-    setHiddenStories
-} from './redux/storiesSlice'
+import { setStories, setLoading, setError, setActiveTab, setHasMore, setPage, setStoryIds, setReadStories, setStarredStories, setHiddenStories} from './redux/storiesSlice'
 
 type RootState = ReturnType<typeof store.getState>;
 

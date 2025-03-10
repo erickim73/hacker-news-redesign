@@ -3,6 +3,8 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import storiesReducer from './storiesSlice';
+import userReducer from './userSlice'
+import commentsReducer from './commentsSlice'
 
 const persistConfig = {
     key: 'hackernews',
@@ -16,6 +18,8 @@ const persistedStoriesReducer = persistReducer(persistConfig, storiesReducer);
 export const store = configureStore({
     reducer: {
         stories: persistedStoriesReducer,
+        user: userReducer,
+        comments: commentsReducer, 
     },
     // Recommended middleware setup
     middleware: (getDefaultMiddleware) =>

@@ -274,7 +274,7 @@ export default function UserPage() {
                             <FileText className="h-12 w-12 mb-4 text-muted-foreground/50" />
                             <h3 className="text-lg font-medium mb-1">No stories found</h3>
                             <p className="text-sm max-w-md">
-                                This user hasn't submitted any stories yet, or all their submissions are comments.
+                                This user hasn&apos;t submitted any stories yet, or all their submissions are comments.
                             </p>
                         </div>
                         )}

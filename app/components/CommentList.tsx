@@ -1,23 +1,28 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import type { Comment as CommentType } from "../lib/api"
 import Comment from "./Comments"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MessageSquare } from "lucide-react"
 import axios from "axios"
+import { useDispatch, useSelector } from "react-redux"
+import { RootState, AppDispatch } from '../redux/store'
+import { setComments, setLoading, setError, increaseVisibleComments,resetCommentState } from "../redux/commentsSlice"
 
 interface CommentSectionProps {
-  storyId: number
-  commentCount?: number
+    storyId: number
+    commentCount?: number
 }
 
 const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount = 0 }) => {
-    const [comments, setComments] = useState<CommentType[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [visibleComments, setVisibleComments] = useState<number>(10)
+    const comments = useSelector((state: RootState) => state.comments.comments)
+    const loading = useSelector((state: RootState) => state.comments.loading)
+    const error = useSelector((state: RootState) => state.comments.error)
+    const visibleComments = useSelector((state: RootState) => state.comments.visibleComments)
+
+    const dispatch = useDispatch<AppDispatch>()
 
     // track if comments have been loaded
     const commentsLoadedRef = useRef(false)
@@ -25,18 +30,18 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     const BASE_URL = "https://hacker-news.firebaseio.com/v0"
 
     const loadMoreComments = () => {
-        setVisibleComments(prev => prev + 10) 
+        dispatch(increaseVisibleComments(10))
     }
 
     useEffect(() => {
         // Reset state when storyId changes
         if (storyId) {
-            setLoading(true)
-            setError(null)
+            dispatch(setLoading(true))
+            dispatch(setError(null))
+            dispatch(resetCommentState())
             commentsLoadedRef.current = false
-            setVisibleComments(10)
         }
-    }, [storyId])
+    }, [storyId, dispatch])
 
     useEffect(() => {
         // skip if we've already loaded comments or if storyId is invalid
@@ -49,8 +54,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
 
     const loadComments = async () => {
         try {
-            setLoading(true)
-            setError(null)
+            dispatch(setLoading(true))
+            dispatch(setError(null))
 
 
             // fetch the story to get comment IDs
@@ -58,8 +63,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
             const story = storyResponse.data
 
             if (!story || !story.kids || story.kids.length === 0) {
-                setComments([])
-                setLoading(false)
+                dispatch(setComments([]))
+                dispatch(setLoading(false))
                 commentsLoadedRef.current = true
                 return
             }
@@ -91,7 +96,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
 
         // only update state if the component is still mounted
         if (!signal.aborted) {
-            setComments(topLevelComments)
+            dispatch(setComments(topLevelComments))
             commentsLoadedRef.current = true
         }
         } catch (err) {
@@ -100,10 +105,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
                 return
             }
             console.error("Error loading comments:", err)
-            setError("Failed to load comments. Please try again later.")
+            dispatch(setError("Failed to load comments. Please try again later."))
         } finally {
             if (!signal.aborted) {
-            setLoading(false)
+                dispatch(setLoading(false))
             }
         }
     }
@@ -114,22 +119,22 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     return () => {
         controller.abort()
     }
-}, [storyId]) // only re-run if storyId changes
+}, [storyId, dispatch]) // only re-run if storyId changes
 
     if (loading) {
-    return (
-        <div className="space-y-4 mt-6">
-            <h2 className="text-xl font-semibold">Comments</h2>
-            {[1, 2, 3].map((i) => (
-                <div key={i} className="space-y-2">
-                <div className="flex items-center space-x-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-32" />
-                </div>
-                <Skeleton className="h-16 w-full" />
-                </div>
-            ))}
-        </div>
+        return (
+            <div className="space-y-4 mt-6">
+                <h2 className="text-xl font-semibold">Comments</h2>
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-32" />
+                    </div>
+                    <Skeleton className="h-16 w-full" />
+                    </div>
+                ))}
+            </div>
         )
     }
 

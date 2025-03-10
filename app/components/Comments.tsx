@@ -1,18 +1,33 @@
-import React, {useState} from 'react'
+import React, { useMemo } from 'react'
 import {Comment as CommentType} from '../lib/api'
 import { cn } from '../lib/utils'
 import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronUp, Clock, User } from 'lucide-react';
 import Link from 'next/link';
+import { useDispatch, useSelector } from "react-redux"
+import { RootState } from '../redux/store'
+import { createSelector } from '@reduxjs/toolkit';
+import { toggleCommentExpansion } from '../redux/commentsSlice';
 
 interface CommentProps {
     comment: CommentType;
     depth?: number
 }
 
-const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
-    const [expanded, setExpanded] = useState<boolean>(true)
+const selectExpandedComments = (state: RootState) => state.comments.expandedComments
 
+const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
+    const dispatch = useDispatch()
+
+    const selectThisCommentExpanded = useMemo(
+        () => createSelector(
+            [selectExpandedComments],
+            (expandedComments) => expandedComments[comment.id] !== false // default to expanded if not set
+        ),
+        [comment.id] // only recreate when comment.id changes
+    )
+
+    const expanded = useSelector(selectThisCommentExpanded)
 
     const formatDate = (timestamp: number) => {
         const now = new Date()
@@ -53,7 +68,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
     }
 
     const toggleExpanded = () => {
-        setExpanded(!expanded)
+        dispatch(toggleCommentExpansion(comment.id))
     }
 
     const maxIndent = 5
