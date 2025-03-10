@@ -292,7 +292,7 @@ export default function HomePage() {
         <TabsContent value="starred" className="space-y-6">
             {stories.length === 0 && !loading ? (
                 <div className="text-center text-muted-foreground py-12">
-                <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <h3 className="text-lg font-medium mb-2">No starred stories yet</h3>
                 <p>Stories you star will appear here for easy access.</p>
                 </div>

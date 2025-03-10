@@ -1,69 +1,63 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import HackerNewsAPI, { type Story } from '../../lib/api'
-import { useLocalStorage } from '../../lib/localStorage'
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import HackerNewsAPI from '../../lib/api'
 import CommentSection from '../../components/CommentList'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ArrowLeft, CalendarDays, ExternalLink, MessageSquare, User } from "lucide-react"
 import Link from 'next/link'
+import story from '../../redux/store'
+import { fetchStoryStart, fetchStorySuccess, fetchStoryFailure, markAsRead, toggleStar } from '../../redux/storiesSlice'
 
 interface StoryProps {
     storyId: string;
 }
 
+type RootState = ReturnType<typeof story.getState>;
+
 export default function StoryDetail({ storyId }: StoryProps) {   
     const storyIdNumber = Number(storyId)
 
-    const [story, setStory] = useState<Story | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const dispatch = useDispatch()
 
-    // local storage for read/starred states
-    const [readStories, setReadStories] = useLocalStorage<number[]>("readStories", [])
-    const [starredStories, setStarredStories] = useLocalStorage<number[]>("starredStories", [])
+    const { currentStory: story, loading, error, readStories, starredStories } = useSelector((state: RootState) => state.stories)
 
-    const [hasMarkedAsRead, setHasMarkedAsRead] = useState(false)
 
     useEffect(() => {
         const fetchStory = async () => {
             if (!storyIdNumber) return
         
-            setLoading(true)
-            setError(null)
+            dispatch(fetchStoryStart())
         
             try {
                 const storyData = await HackerNewsAPI.getStory(storyIdNumber)
         
                 if (!storyData) {
-                    setError("Story not found")
-                    setLoading(false)
+                    dispatch(fetchStoryFailure("Story not found"))
                     return
                 }
         
                 // mark as read
-                if (!readStories.includes(storyIdNumber) && !hasMarkedAsRead) {
-                    setReadStories([...readStories, storyIdNumber]);
-                    setHasMarkedAsRead(true);
+                if (!readStories.includes(storyIdNumber)) {
+                    dispatch(markAsRead(storyIdNumber))
                 }
         
-                setStory({
+                dispatch(fetchStorySuccess({
                     ...storyData,
                     isRead: true,
                     isStarred: starredStories.includes(storyIdNumber),
-                })
+                }))
             } catch (err) {
                 console.error("Error fetching story:", err)
-                setError("Failed to load story. Please try again later.")
-            } finally {
-                setLoading(false)
-            }
+                dispatch(fetchStoryFailure("Failed to load story. Please try again later."))
+            } 
         }
     
     fetchStory()
-    }, [storyIdNumber, readStories, starredStories, hasMarkedAsRead])
+    }, [storyIdNumber, readStories, starredStories, dispatch])
 
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
@@ -89,21 +83,7 @@ export default function StoryDetail({ storyId }: StoryProps) {
 
     const handleToggleStar = () => {
         if (!story) return
-
-            const isCurrentlyStarred = starredStories.includes(story.id)
-
-            // update story in state
-            setStory({
-            ...story,
-            isStarred: !isCurrentlyStarred,
-            })
-
-            // update local storage
-            if (isCurrentlyStarred) {
-            setStarredStories(starredStories.filter((id) => id !== story.id))
-            } else {
-            setStarredStories([...starredStories, story.id])
-        }
+            dispatch(toggleStar(story.id))
     }
 
     if (loading) {

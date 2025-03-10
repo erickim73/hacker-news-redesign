@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import HackerNewsAPI, { type User, type Story } from '../../lib/api'
+import { useEffect } from 'react'
+import HackerNewsAPI from '../../lib/api'
 import StoryList from '../../components/StoryList'
-import { useLocalStorage } from '../../lib/localStorage'
 import { useParams } from 'next/navigation';
 import { CalendarDays, FileText, Award, ArrowLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,44 +10,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser, setUserStories, setLoading, setError, setInitialDataLoaded } from '../../redux/userSlice'
+import { setReadStories, setStarredStories, setHiddenStories } from '../../redux/storiesSlice'
+import user from '../../redux/store'
+
+
+type RootState = ReturnType<typeof user.getState>;
+
 
 export default function UserPage() {
     // get username from route params
     const params = useParams(); 
     const username = params?.id as string; 
-    
-    // state for user profile
-    const [user, setUser] = useState<User | null>(null)
-    const [userStories, setUserStories] = useState<Story[]>([])
-    const [loading, setLoading] = useState<boolean>(true)
-    const [error, setError] = useState<string | null>(null)
-    
-    // local storage for read/starred states
-    const [readStories, setReadStories] = useLocalStorage<number[]>('readStories', [])
-    const [starredStories, setStarredStories] = useLocalStorage<number[]>('starredStories', [])
-    const [hiddenStories, setHiddenStories] = useLocalStorage<number[]>('hiddenStories', [])
 
-    // add ref to track initial load
-    const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+    const dispatch = useDispatch()
+
+    const { user, userStories, loading, error, initialDataLoaded } = useSelector((state: RootState) => state.user)
+
+    const { readStories, starredStories, hiddenStories } = useSelector((state: RootState) => state.stories)
     
     // get user data and submissions
     useEffect(() => {
         if (!username) return
 
         const fetchUserData = async () => {
-            setLoading(true)
-            setError(null)
+            dispatch(setLoading(true))
+            dispatch(setError(null))
             
             try {
                 // get user profile
                 const userData = await HackerNewsAPI.getUser(username)
                 if (!userData) {
-                    setError(`User ${username} not found`)
-                    setLoading(false)
+                    dispatch(setError(`User ${username} not found`))
+                    dispatch(setLoading(false))
                     return;
                 }
                 
-                setUser(userData);
+                dispatch(setUser(userData))
                 
                 // get user submissions; limit to recent 30
                 if (userData.submitted && userData.submitted.length > 0) {
@@ -68,32 +67,32 @@ export default function UserPage() {
                         isStarred: starredStories.includes(story.id),
                     }))
                     
-                    setUserStories(storiesWithStatus)
-                    setInitialDataLoaded(true)
+                    dispatch(setUserStories(storiesWithStatus))
+                    dispatch(setInitialDataLoaded(true))
                 }
             } catch (error) {
                 console.error("Error fetching user data:", error)
-                setError("Failed to load user data. Please try again later.")
+                dispatch(setError("Failed to load user data. Please try again later."))
             } finally {
-                setLoading(false)
+                dispatch(setLoading(false))
             }
         }
         
         fetchUserData();
-    }, [username, readStories, starredStories, hiddenStories])
+    }, [username, readStories, starredStories, hiddenStories, dispatch])
     
     // marks story as read
     const handleReadStory = (storyId: number) => {
         // update story in state
-        setUserStories(prevStories =>
-            prevStories.map(story => 
+        dispatch(setUserStories(
+            userStories.map(story => 
                 story.id === storyId ? {...story, isRead: true} : story
             )
-        )
+        ))
         
         // update local storage
         if (!readStories.includes(storyId)) {
-            setReadStories([...readStories, storyId])
+            dispatch(setReadStories([...readStories, storyId]))
         }
     }
     
@@ -103,32 +102,32 @@ export default function UserPage() {
         const isCurrentlyStarred = starredStories.includes(storyId)
         
         // update story in state
-        setUserStories(prevStories => 
-            prevStories.map(story => 
+        dispatch(setUserStories(
+            userStories.map(story => 
                 story.id === storyId
                 ? {...story, isStarred: !isCurrentlyStarred} : story
             )
-        )
+        ))
         
         // update local storage
         if (isCurrentlyStarred) {
             // remove from starred stories
-            setStarredStories(starredStories.filter(id => id !== storyId))
+            dispatch(setStarredStories(starredStories.filter(id => id !== storyId)))
         } else {
             // add to starred stories
-            setStarredStories([...starredStories, storyId])
+            dispatch(setStarredStories([...starredStories, storyId]))
         }
     }
 
     // hide story
     const handleHideStory = (storyId: number) => {
-        setUserStories(prevStories => 
-            prevStories.filter(story => story.id !== storyId)
-        )
+        dispatch(setUserStories(
+            userStories.filter(story => story.id !== storyId)
+        ))
 
         // update local storage
         if (!hiddenStories.includes(storyId)) {
-            setHiddenStories([...hiddenStories, storyId]);
+            dispatch(setHiddenStories([...hiddenStories, storyId]))
         }
     };
 

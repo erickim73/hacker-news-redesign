@@ -35,7 +35,7 @@ export default function RootLayout({
                             <main className="flex-1 bg-background">
                                 {children}
                             </main>
-                            <footer className="border-t py-6 text-center text-sm text-muted-foreground">
+                            <footer className="border-t py-6 text-center text-sm text-muted-foreground bg-background">
                                 <div className="max-w-4xl mx-auto px-4">
                                     <p>© {new Date().getFullYear()} Hacker News Redesigned</p>
                                 </div>
