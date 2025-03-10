@@ -17,9 +17,26 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     const [comments, setComments] = useState<CommentType[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [visibleComments, setVisibleComments] = useState<number>(10)
 
     // track if comments have been loaded
     const commentsLoadedRef = useRef(false)
+
+    const BASE_URL = "https://hacker-news.firebaseio.com/v0"
+
+    const loadMoreComments = () => {
+        setVisibleComments(prev => prev + 10) 
+    }
+
+    useEffect(() => {
+        // Reset state when storyId changes
+        if (storyId) {
+            setLoading(true)
+            setError(null)
+            commentsLoadedRef.current = false
+            setVisibleComments(10)
+        }
+    }, [storyId])
 
     useEffect(() => {
         // skip if we've already loaded comments or if storyId is invalid
@@ -35,10 +52,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
             setLoading(true)
             setError(null)
 
-            const baseUrl = "https://hacker-news.firebaseio.com/v0"
 
             // fetch the story to get comment IDs
-            const storyResponse = await axios.get(`${baseUrl}/item/${storyId}.json`, { signal })
+            const storyResponse = await axios.get(`${BASE_URL}/item/${storyId}.json`, { signal })
             const story = storyResponse.data
 
             if (!story || !story.kids || story.kids.length === 0) {
@@ -48,50 +64,34 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
                 return
             }
 
-        // function to fetch a comment by ID
-        const fetchComment = async (id: number): Promise<CommentType | null> => {
-            try {
-                const response = await axios.get(`${baseUrl}/item/${id}.json`, { signal })
-                return response.data
-            } catch (error) {
-                if (axios.isCancel(error)) {
-                    // request was cancelled, ignore
+            const topLevelCommentIds = story.kids.slice(0, 30)
+
+            const commentPromises = topLevelCommentIds.map(async (id: number) => {
+                try {
+                    const response = await axios.get(`${BASE_URL}/item/${id}.json`, { signal })
+                    const comment = response.data
+                    
+                    if (!comment || comment.deleted || comment.dead) return null
+                    
+                    return { 
+                        ...comment, 
+                        replies: comment.kids && comment.kids.length > 0 ? [] : null,
+                        hasUnloadedReplies: comment.kids && comment.kids.length > 0
+                    }
+                } catch (error) {
+                    if (axios.isCancel(error)) return null
+                    console.error(`Error fetching comment ${id}:`, error)
                     return null
                 }
-                console.error(`Error fetching comment ${id}:`, error)
-                return null
-            }
-        }
+            })
 
-        // fetch comments with a maximum depth
-        const fetchCommentTree = async (ids: number[], depth = 0, maxDepth = 2): Promise<CommentType[]> => {
-            if (depth > maxDepth || !ids || ids.length === 0) return []
+        
 
-            const commentPromises = ids.map(async (id) => {
-                const comment = await fetchComment(id)
-
-                if (!comment || comment.deleted || comment.dead) return null
-
-                // if we haven't reached max depth and the comment has children, fetch them
-                if (depth < maxDepth && comment.kids && comment.kids.length > 0) {
-                    const childComments = await fetchCommentTree(comment.kids, depth + 1, maxDepth)
-                return { ...comment, replies: childComments }
-            }
-
-            return comment
-        })
-
-            const comments = await Promise.all(commentPromises)
-            return comments.filter(Boolean) as CommentType[]
-        }
-
-        // limit to first 30 top-level comments for performance
-        const topLevelCommentIds = story.kids.slice(0, 30)
-        const loadedComments = await fetchCommentTree(topLevelCommentIds)
+        const topLevelComments = (await Promise.all(commentPromises)).filter(Boolean) as CommentType[]
 
         // only update state if the component is still mounted
         if (!signal.aborted) {
-            setComments(loadedComments)
+            setComments(topLevelComments)
             commentsLoadedRef.current = true
         }
         } catch (err) {
@@ -155,14 +155,25 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
         )
     }
 
+    const displayedComments = comments.slice(0, visibleComments)
+
     return (
         <div className="mt-6">
             <h2 className="text-xl font-semibold mb-4">Comments ({commentCount || comments.length})</h2>
             <div className="space-y-4">
-                {comments.map((comment) => (
-                <Comment key={comment.id} comment={comment} />
+                {displayedComments.map((comment) => (
+                    <Comment key={comment.id} comment={comment} />
                 ))}
             </div>
+
+            {visibleComments < comments.length && (
+                <button 
+                    onClick={loadMoreComments}
+                    className="mt-4 w-full py-2 border border-border rounded-md text-sm hover:bg-muted transition-colors"
+                >
+                    Load more comments
+                </button>
+            )}
 
             {commentCount > comments.length && (
                 <div className="mt-6 text-center text-sm text-muted-foreground">
