@@ -15,6 +15,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
         }
     })
 
+    // update local storage value and state
     const setValue = (value: T) => {
         try {
             const valueToStore = value instanceof Function ? value(storedValue) : value
@@ -34,6 +35,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T)
     // change state if local storage changes in another tab
     useEffect(() => {
         function handleStorageChange(event: StorageEvent) {
+            // only handle changes for this key
             if (event.key === key) {
                 try {
                     const newValue = event.newValue ? JSON.parse(event.newValue) : initialValue

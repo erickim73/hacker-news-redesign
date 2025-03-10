@@ -20,7 +20,7 @@ export function useInfiniteScroll(
             const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight
             const clientHeight = document.documentElement.clientHeight || window.innerHeight
             
-            // If near bottom and not already loading, trigger callback
+            // if near bottom and not already loading, trigger callback
             if (scrollHeight - scrollTop - clientHeight < threshold && !loading) {
                 setLoading(true)
                 callback()

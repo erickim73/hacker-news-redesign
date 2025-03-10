@@ -83,10 +83,10 @@ const HackerNewsAPI = {
         const pageIds = ids.slice(start, end)
         
         try {
+            // fetch stories in parallel with promises
             const storiesPromises = pageIds.map(id => this.getStory(id))
             const stories = await Promise.all(storiesPromises)
 
-            // handle null stories
             return stories.filter(story => story !== null) as Story[]
         } catch (error) {
             console.error("Error fetching stories batch:", error)
@@ -106,48 +106,45 @@ const HackerNewsAPI = {
     
     async getCommentsForStory(storyId: number, maxDepth = 2): Promise<Comment[]> {
         try {
-          const story = await this.getStory(storyId);
-          if (!story || !story.kids || story.kids.length === 0) {
-            return [];
-          }
-    
-          // helper function to recursively get comments
-          const fetchCommentWithReplies = async (
-            commentId: number, 
-            depth: number
-          ): Promise<Comment | null> => {
-            if (depth > maxDepth) return null
-            
-            const comment = await this.getComment(commentId)
-            if (!comment) return null
-            
-            // if the comment has replies, we haven't reached max depth
-            if (comment.kids && comment.kids.length > 0 && depth < maxDepth) {
-              const repliesPromises = comment.kids.map(kidId => 
-                fetchCommentWithReplies(kidId, depth + 1)
-              )
-              
-              const replies = await Promise.all(repliesPromises)
-              // put non-null replies to the comment
-              comment.replies = replies.filter(reply => reply !== null) as Comment[]
+            const story = await this.getStory(storyId);
+            if (!story || !story.kids || story.kids.length === 0) {
+                return [];
             }
+    
+            // helper function to recursively get comments
+            const fetchCommentWithReplies = async (commentId: number, depth: number): Promise<Comment | null> => {
+                if (depth > maxDepth) return null
+                
+                const comment = await this.getComment(commentId)
+                if (!comment) return null
+                
+                // if the comment has replies, we haven't reached max depth
+                if (comment.kids && comment.kids.length > 0 && depth < maxDepth) {
+                    const repliesPromises = comment.kids.map(kidId => 
+                        fetchCommentWithReplies(kidId, depth + 1)
+                    )
+                
+                    const replies = await Promise.all(repliesPromises)
+                    // attach non-null replies to the comment
+                    comment.replies = replies.filter(reply => reply !== null) as Comment[]
+                }
             
             return comment
         }
           
-            // get top-level comments in parallel
-            const commentsPromises = story.kids.map(kidId => 
-                fetchCommentWithReplies(kidId, 1)
-            )
+        // get top-level comments in parallel
+        const commentsPromises = story.kids.map(kidId => 
+            fetchCommentWithReplies(kidId, 1)
+        )
+        
+        const comments = await Promise.all(commentsPromises)
+        return comments.filter(comment => comment !== null) as Comment[]
             
-            const comments = await Promise.all(commentsPromises)
-                return comments.filter(comment => comment !== null) as Comment[]
-                
-            } catch (error) {
-                console.error(`Error fetching comments for story ${storyId}:`, error)
-                return []
-            }
-      },
+        } catch (error) {
+            console.error(`Error fetching comments for story ${storyId}:`, error)
+            return []
+        }
+    },
 
     async getUser(username: string): Promise<User | null> {
         try {

@@ -12,12 +12,7 @@ interface StoryItemProps {
 }
 
 // render one single story
-const StoryItem: React.FC<StoryItemProps> = ({
-    story,
-    onReadStory,
-    onToggleStar,
-    onHideStory
-}) => {
+const StoryItem: React.FC<StoryItemProps> = ({story, onReadStory, onToggleStar, onHideStory }) => {
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
         return date.toLocaleDateString('en-US', {
@@ -57,13 +52,11 @@ const StoryItem: React.FC<StoryItemProps> = ({
     }
 
     const handleHideStory = (e: React.MouseEvent) => {
-        // prevent click from bubbling up to parent, opening story
         e.stopPropagation()
 
         onHideStory(story.id)
     }
 
-    // prevent propagation when clicking on user or comments links
     const handleInternalLinkClick = (e: React.MouseEvent) => {
         e.stopPropagation();
     };
@@ -81,6 +74,7 @@ const StoryItem: React.FC<StoryItemProps> = ({
             <div className="flex items-start gap-4">
                 <div className="flex-1 space-y-2">
                     <div className = 'flex items-start justify-between gap-2'>
+                        
                         <h3 className={cn("text-lg font-medium leading-tight",story.isRead ? "text-muted-foreground" : "text-foreground",)}>
                             {story.title}
                         </h3>
@@ -144,6 +138,7 @@ const StoryItem: React.FC<StoryItemProps> = ({
                             <span>{formatDate(story.time)}</span>
                         </div>
 
+                        {/* story comments */}
                         {story.descendants !== undefined && (
                             <Link
                                 href={`/story/${story.id}`}
@@ -152,7 +147,7 @@ const StoryItem: React.FC<StoryItemProps> = ({
                             >
                                 <MessageSquare className="h-3.5 w-3.5" />
                                 <span>
-                                {story.descendants} {story.descendants === 1 ? "comment" : "comments"}
+                                    {story.descendants} {story.descendants === 1 ? "comment" : "comments"}
                                 </span>
                             </Link>
                         )}

@@ -6,10 +6,10 @@ import storiesReducer from './storiesSlice';
 import userReducer from './userSlice'
 import commentsReducer from './commentsSlice'
 
+// config for redux persist
 const persistConfig = {
     key: 'hackernews',
     storage,
-    // only persist these keys
     whitelist: ['readStories', 'starredStories', 'hiddenStories'],
 };
 
@@ -21,17 +21,19 @@ export const store = configureStore({
         user: userReducer,
         comments: commentsReducer, 
     },
-    // recommend middleware setup
+    
+    // ignore serializable checks for persist-related actions
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
             ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
             },
         }),
-});
+})
 
 export const persistor = persistStore(store);
 
+// set up listener for redux query, allowing automatic refetching and synchronization of state
 setupListeners(store.dispatch);
 
 export type RootState = ReturnType<typeof store.getState>;

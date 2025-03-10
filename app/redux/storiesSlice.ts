@@ -13,7 +13,7 @@ interface StoriesState {
     starredStories: number[];
     hiddenStories: number[];
     currentStory: Story | null;
-  }
+};
 
 const initialState: StoriesState = {
     stories: [],
@@ -36,35 +36,43 @@ const storiesSlice = createSlice({
         setStories: (state, action: PayloadAction<Story[]>) => {
             state.stories = action.payload;
         },
+
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.loading = action.payload;
         },
+
         setError: (state, action: PayloadAction<string | null>) => {
             state.error = action.payload;
         },
+
         setActiveTab: (state, action: PayloadAction<string>) => {
             state.activeTab = action.payload;
         },
+
         setHasMore: (state, action: PayloadAction<boolean>) => {
             state.hasMore = action.payload;
         },
+
         setPage: (state, action: PayloadAction<number>) => {
             state.page = action.payload;
         },
+
         setStoryIds: (state, action: PayloadAction<number[]>) => {
             state.storyIds = action.payload;
         },
+
         setReadStories: (state, action: PayloadAction<number[]>) => {
             state.readStories = action.payload;
         },
+
         setStarredStories: (state, action: PayloadAction<number[]>) => {
             state.starredStories = action.payload;
         },
+        
         setHiddenStories: (state, action: PayloadAction<number[]>) => {
             state.hiddenStories = action.payload;
         },
 
-        // actions for storydetail page
         fetchStoryStart: (state) => {
             state.loading = true;
             state.error = null;

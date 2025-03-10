@@ -15,7 +15,6 @@ type RootState = ReturnType<typeof store.getState>;
 
 type TabValue = "top" | "new" | "best" | "starred";
 
-
 export default function HomePage() {
     const dispatch = useDispatch()
     const stories = useSelector((state: RootState) => state.stories.stories)
@@ -34,6 +33,7 @@ export default function HomePage() {
         try {
             dispatch(setLoading(true))
 
+            // get story ids for selected type
             const ids = await storiesService.fetchStoryIdsByType(type, starredStories)
     
             dispatch(setStoryIds(ids))
@@ -41,6 +41,7 @@ export default function HomePage() {
             dispatch(setPage(1))
             dispatch(setStories([]))
             dispatch(setLoading(false))
+
         } catch (error) {
             dispatch(setError("Failed to load stories."))
             console.error("Error fetching stories:", error)
@@ -49,25 +50,21 @@ export default function HomePage() {
     }, [starredStories, dispatch])
 
     const handleTabChange = useCallback((value: string) => {
-        console.log(`Tab changed to: ${value}`)
         dispatch(setActiveTab(value))
         fetchStoryIdsByType(value)
     }, [dispatch, fetchStoryIdsByType])
 
-    // only run on initial mount
+    // fetch story IDs when the component mounts
     useEffect(() => {
-        console.log("Initial component mount, fetching story IDs")
         fetchStoryIdsByType(activeTab)
     }, [])
 
-    
+    // fetch stories based on current page and loading state
     const fetchStories = useCallback(async () => {
         if (loading || !hasMore) {
-            console.log("Skipping fetch due to:", {loading, hasMore})
             return
         }
         
-        console.log(`Fetching stories for page ${page}`)
         try {
             await storiesService.fetchStories()
         } catch (error) {
@@ -79,12 +76,11 @@ export default function HomePage() {
     // trigger initial fetch after storyIds are loaded
     useEffect(() => {
         if (storyIds.length > 0 && page === 1) {
-            console.log("Story IDs loaded, triggering initial fetch")
             fetchStories()
         }
     }, [storyIds, page, fetchStories]) 
 
-    // use infinite scroll hook
+
     const infiniteScrollConfig = useMemo(() => ({
         threshold: 300,
         disabled: loading || !hasMore,
@@ -94,7 +90,6 @@ export default function HomePage() {
 
 
     const handleReadStory = useCallback((storyId: number) => {
-        console.log(`Marking story ${storyId} as read`)
         // update story in state
         dispatch(setStories(
             stories.map(story => 
@@ -102,7 +97,7 @@ export default function HomePage() {
             )
         ))
 
-        // update local storage
+        // update in local storage
         if (!readStories.includes(storyId)) {
             dispatch(setReadStories([...readStories, storyId]))
         }
@@ -111,7 +106,6 @@ export default function HomePage() {
 
     const handleToggleStar = useCallback((storyId: number) => {
         const isCurrentlyStarred = starredStories.includes(storyId)
-        console.log(`${isCurrentlyStarred ? 'Unstarring' : 'Starring'} story ${storyId}`)
 
         // update story in state
         dispatch(setStories(
@@ -122,10 +116,8 @@ export default function HomePage() {
         ))
         // update local storage
         if (isCurrentlyStarred) {
-            // remove from starred stories
             dispatch(setStarredStories(starredStories.filter(id => id !== storyId)))
         } else {
-            // add to starred stories
             dispatch(setStarredStories([...starredStories, storyId]))
         }
 
@@ -135,7 +127,6 @@ export default function HomePage() {
     }, [stories, starredStories, activeTab, dispatch])
 
     const handleHideStory = useCallback((storyId: number) => {
-        console.log(`Hiding story ${storyId}`)
         // remove from current displayed stories
         dispatch(setStories(stories.filter(story => story.id !== storyId)))
         
@@ -144,12 +135,11 @@ export default function HomePage() {
     }, [stories, hiddenStories, dispatch])
 
     const handleLoadMore = useCallback(() => {
-        console.log("Load more button clicked")
         fetchStories()
     }, [fetchStories])
 
+    // load saved stories from local storage on component mount
     useEffect(() => {
-        console.log("Loading data from localStorage")
         try {
             const savedReadStoriesString = localStorage.getItem('readStories');
             const savedStarredStoriesString = localStorage.getItem('starredStories');
@@ -162,28 +152,23 @@ export default function HomePage() {
             dispatch(setReadStories(savedReadStories))
             dispatch(setStarredStories(savedStarredStories))
             dispatch(setHiddenStories(savedHiddenStories))
-            console.log("Successfully loaded data from localStorage")
         } catch (e) {
             console.error("Error loading data from localStorage:", e)
         }
     }, [dispatch])
 
-    useEffect(() => {
-        console.log("Batch updating localStorage with all story data")
-        
-        // Create a function to handle all localStorage updates at once
+    // batch update local storage with latest state data
+    useEffect(() => {        
         const updateLocalStorage = () => {
             localStorage.setItem('readStories', JSON.stringify(readStories))
             localStorage.setItem('starredStories', JSON.stringify(starredStories))
             localStorage.setItem('hiddenStories', JSON.stringify(hiddenStories))
         }
         
-        // Use requestIdleCallback if available for non-blocking updates
         if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-            window.requestIdleCallback(() => updateLocalStorage())
+            window.requestIdleCallback(() => updateLocalStorage()) // use non-blocking update if possible
         } else {
-            // Fallback to setTimeout if requestIdleCallback is not available
-            setTimeout(updateLocalStorage, 0)
+            setTimeout(updateLocalStorage, 0) //fallback to settimeout for non-blocking update
         }
     }, [readStories, starredStories, hiddenStories])
 

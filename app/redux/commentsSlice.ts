@@ -47,6 +47,7 @@ export const commentsSlice = createSlice ({
         },
 
         setAllCommentsExpanded: (state, action: PayloadAction<boolean>) => {
+            // recurisvely set expansion state for comment and its replies
             const setExpandedForComment = (comment: CommentType, isExpanded: boolean) => {
                 state.expandedComments[comment.id] = isExpanded;
                 if (comment.replies) {
@@ -64,8 +65,7 @@ export const commentsSlice = createSlice ({
         },
 
         updateCommentReplies: (state, action: PayloadAction<{ commentId: number, replies: CommentType[] }>) => {
-            const { commentId, replies } = action.payload
-            
+            const { commentId, replies } = action.payload            
             // helper function to find and update a comment in the nested structure
             const updateCommentInTree = (comments: CommentType[], targetId: number, newReplies: CommentType[]): boolean => {
                 for (let i = 0; i < comments.length; i++) {
@@ -94,6 +94,15 @@ export const commentsSlice = createSlice ({
     }
 })
 
-export const { setComments, setLoading, setError, increaseVisibleComments,resetCommentState, toggleCommentExpansion, setAllCommentsExpanded, updateCommentReplies} = commentsSlice.actions;
+export const { 
+    setComments, 
+    setLoading, 
+    setError, 
+    increaseVisibleComments,
+    resetCommentState, 
+    toggleCommentExpansion, 
+    setAllCommentsExpanded, 
+    updateCommentReplies
+} = commentsSlice.actions;
 
 export default commentsSlice.reducer;

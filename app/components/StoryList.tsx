@@ -10,13 +10,7 @@ interface StoryListProps {
 }
 
 // render list of stories
-const StoryList: React.FC<StoryListProps> = ({
-    stories, 
-    onReadStory,
-    onToggleStar,
-    onHideStory,
-}) => {
-    // no stories
+const StoryList: React.FC<StoryListProps> = ({stories, onReadStory, onToggleStar, onHideStory, }) => {
     if (stories.length === 0) {
         return (
             <div className="text-center p-8 text-gray-600 dark:text-gray-400">
@@ -29,11 +23,11 @@ const StoryList: React.FC<StoryListProps> = ({
         <div className="space-y-4">
             {stories.map(story => (
                 <StoryItem 
-                key={story.id} 
-                story={story} 
-                onReadStory={onReadStory}
-                onToggleStar={onToggleStar}
-                onHideStory={onHideStory}
+                    key={story.id} 
+                    story={story} 
+                    onReadStory={onReadStory}
+                    onToggleStar={onToggleStar}
+                    onHideStory={onHideStory}
                 />
             ))}
         </div>

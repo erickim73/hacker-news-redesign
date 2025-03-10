@@ -11,12 +11,10 @@ import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "700"] })
 
-
-// root layout component
 export default function RootLayout({
     children,
 }: {
-    children: React.ReactNode; // define expected prop type
+    children: React.ReactNode; 
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
@@ -24,6 +22,7 @@ export default function RootLayout({
                 <Provider store={store}>
                     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                         <div className="min-h-dvh flex flex-col">
+                            
                             <header className="border-b sticky top-0 z-10 bg-background">
                                 <div className="max-w-4xl mx-auto flex items-center justify-between h-16 px-4">
                                     <Link href="/" className="flex items-center gap-2">
@@ -32,16 +31,18 @@ export default function RootLayout({
                                     </Link>
                                 </div>
                             </header>
+
                             <main className="flex-1 bg-background">
                                 {children}
                             </main>
+
                             <footer className="border-t py-6 text-center text-sm text-muted-foreground bg-background">
                                 <div className="max-w-4xl mx-auto px-4">
                                     <p>© {new Date().getFullYear()} Hacker News Redesigned</p>
                                 </div>
                             </footer>
+
                         </div>
-                    
                     </ThemeProvider>
                 </Provider>
             </body>

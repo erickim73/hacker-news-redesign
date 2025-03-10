@@ -26,7 +26,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
             [selectExpandedComments],
             (expandedComments) => expandedComments[comment.id] !== false // default to expanded if not set
         ),
-        [comment.id] // only recreate when comment.id changes
+        [comment.id] 
     )
 
     const selectThisCommentLoading = useMemo(
@@ -41,8 +41,9 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
     const isLoadingReplies = useSelector(selectThisCommentLoading)
     const base_url = "https://hacker-news.firebaseio.com/v0"
 
+    // fetch replies when comment is expanded
     useEffect(() => {
-        // only fetch if expanded, has unloaded replies, and we're not too deep
+        // only fetch if expanded, has unloaded replies, and is not too deep in thread
         if (expanded && comment.hasUnloadedReplies && comment.kids && depth < 10) {
             dispatch({ 
                 type: 'comments/setCommentLoading', 
@@ -87,13 +88,13 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                     })
                     :[]
 
+                    // wait for all results to be fetched and processed
                     const results = await Promise.allSettled(replyPromises)
                     const replies = results
                         .filter(result => result.status === 'fulfilled' && result.value)
                         .map(result => (result as PromiseFulfilledResult<CommentType>).value)
                     
                     
-                    // update redux store with these replies
                     dispatch(updateCommentReplies({ commentId: comment.id, replies }))
                     
                 } catch (error) {
@@ -117,7 +118,6 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
         const now = new Date()
         const commentDate = new Date(timestamp * 1000)
 
-        // if less than 24 hours, show relative time
         const diffMs = now.getTime() - commentDate.getTime()
         const diffHrs = diffMs / (1000 * 60 * 60)
 
@@ -196,7 +196,6 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
 
     const replyCount = getReplyCount(comment)
 
-    // deleted or empty comments
     if (comment.deleted || (!comment.text && !comment.by)) {
         return (
         <div className={cn("relative group transition-all duration-200", getIndentClass(indentLevel))}>
@@ -254,7 +253,7 @@ const Comment: React.FC<CommentProps> = ({comment, depth = 0}) => {
                     </Button>
                 </div>
                 
-                {/* comment content */}
+                {/* comment content if expanded */}
                 {expanded && (
                     <div
                         className="text-[15px] leading-relaxed text-gray-800 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-a:text-primary"

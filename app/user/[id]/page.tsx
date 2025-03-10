@@ -15,9 +15,7 @@ import { setUser, setUserStories, setLoading, setError, setInitialDataLoaded } f
 import { setReadStories, setStarredStories, setHiddenStories } from '../../redux/storiesSlice'
 import user from '../../redux/store'
 
-
 type RootState = ReturnType<typeof user.getState>;
-
 
 export default function UserPage() {
     // get username from route params
@@ -81,7 +79,6 @@ export default function UserPage() {
         fetchUserData();
     }, [username, readStories, starredStories, hiddenStories, dispatch])
     
-    // marks story as read
     const handleReadStory = (storyId: number) => {
         // update story in state
         dispatch(setUserStories(
@@ -96,9 +93,7 @@ export default function UserPage() {
         }
     }
     
-    // star or unstar story
     const handleToggleStar = (storyId: number) => {
-        // check if story is already starred
         const isCurrentlyStarred = starredStories.includes(storyId)
         
         // update story in state
@@ -119,7 +114,6 @@ export default function UserPage() {
         }
     }
 
-    // hide story
     const handleHideStory = (storyId: number) => {
         dispatch(setUserStories(
             userStories.filter(story => story.id !== storyId)
@@ -131,7 +125,6 @@ export default function UserPage() {
         }
     };
 
-    // format timestamp to readable date
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
         return date.toLocaleDateString('en-US', {
@@ -141,7 +134,6 @@ export default function UserPage() {
             })
     }
   
-    // calculate account age
     const calculateAccountAge = (timestamp: number) => {
         const now = new Date()
         const created = new Date(timestamp * 1000)

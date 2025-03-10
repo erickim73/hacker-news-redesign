@@ -31,7 +31,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     const base_url = "https://hacker-news.firebaseio.com/v0"
 
     const loadMoreComments = useCallback(() => {
-        // don't't load more if we're already loading or all comments are visible
+        // don't load more if we're already loading or all comments are visible
         if (!loading && visibleComments < comments.length) {
             dispatch(increaseVisibleComments(10))
         }
@@ -40,11 +40,11 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     useInfiniteScroll(loadMoreComments, {
         // only enable infinite scrolling when there are more comments to load
         disabled: visibleComments >= comments.length || loading,
-        threshold: 300 // load more when within 300px of bottom
+        threshold: 300 
     })
 
     useEffect(() => {
-        // Reset state when storyId changes
+        // reset state when storyId changes
         if (storyId) {
             dispatch(setLoading(true))
             dispatch(setError(null))
@@ -59,77 +59,78 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
             return
         }
 
-    const controller = new AbortController()
-    const signal = controller.signal
+        // abort controller to handle cancel requests
+        const controller = new AbortController()
+        const signal = controller.signal
 
-    const loadComments = async () => {
-        try {
-            dispatch(setLoading(true))
-            dispatch(setError(null))
+        const loadComments = async () => {
+            try {
+                dispatch(setLoading(true))
+                dispatch(setError(null))
 
 
-            // fetch the story to get comment IDs
-            const storyResponse = await axios.get(`${base_url}/item/${storyId}.json`, { signal })
-            const story = storyResponse.data
+                // fetch the story to get comment IDs
+                const storyResponse = await axios.get(`${base_url}/item/${storyId}.json`, { signal })
+                const story = storyResponse.data
 
-            if (!story || !story.kids || story.kids.length === 0) {
-                dispatch(setComments([]))
-                dispatch(setLoading(false))
-                commentsLoadedRef.current = true
-                return
-            }
-
-            const topLevelCommentIds = story.kids.slice(0, 50)
-
-            const commentPromises = topLevelCommentIds.map(async (id: number) => {
-                try {
-                    const response = await axios.get(`${base_url}/item/${id}.json`, { signal })
-                    const comment = response.data
-                    
-                    if (!comment || comment.deleted || comment.dead) return null
-                    
-                    return { 
-                        ...comment, 
-                        replies: comment.kids && comment.kids.length > 0 ? [] : null,
-                        hasUnloadedReplies: comment.kids && comment.kids.length > 0
-                    }
-                } catch (error) {
-                    if (axios.isCancel(error)) return null
-                    console.error(`Error fetching comment ${id}:`, error)
-                    return null
+                // if no comments
+                if (!story || !story.kids || story.kids.length === 0) {
+                    dispatch(setComments([]))
+                    dispatch(setLoading(false))
+                    commentsLoadedRef.current = true
+                    return
                 }
-            })
+                
+                const topLevelCommentIds = story.kids.slice(0, 50)
+                // promises to fetch each top level comment
+                const commentPromises = topLevelCommentIds.map(async (id: number) => {
+                    try {
+                        const response = await axios.get(`${base_url}/item/${id}.json`, { signal })
+                        const comment = response.data
+                        
+                        if (!comment || comment.deleted || comment.dead) return null
+                        
+                        return { 
+                            ...comment, 
+                            replies: comment.kids && comment.kids.length > 0 ? [] : null, // add empty replies if comment has nested replies
+                            hasUnloadedReplies: comment.kids && comment.kids.length > 0 // mark if comment has replies to load
+                        }
+                    } catch (error) {
+                        if (axios.isCancel(error)) return null
+                        
+                        console.error(`Error fetching comment ${id}:`, error)
+                        return null
+                    }
+                })       
 
-        
+                // wait for all comment promises to resolve
+                const topLevelComments = (await Promise.all(commentPromises)).filter(Boolean) as CommentType[]
 
-        const topLevelComments = (await Promise.all(commentPromises)).filter(Boolean) as CommentType[]
-
-        // only update state if the component is still mounted
-        if (!signal.aborted) {
-            dispatch(setComments(topLevelComments))
-            commentsLoadedRef.current = true
-        }
-        } catch (err) {
-            if (axios.isCancel(err)) {
-                // request was cancelled, ignore
-                return
+                // only update state if the component is still mounted
+                if (!signal.aborted) {
+                    dispatch(setComments(topLevelComments))
+                    commentsLoadedRef.current = true
+                }
+            } catch (err) {
+                if (axios.isCancel(err)) {
+                    return
+                }
+                console.error("Error loading comments:", err)
+                dispatch(setError("Failed to load comments. Please try again later."))
+            } finally {
+                if (!signal.aborted) {
+                    dispatch(setLoading(false))
+                }
             }
-            console.error("Error loading comments:", err)
-            dispatch(setError("Failed to load comments. Please try again later."))
-        } finally {
-            if (!signal.aborted) {
-                dispatch(setLoading(false))
-            }
         }
-    }
 
-    loadComments()
+        loadComments()
 
-    // cleanup function to abort any in-flight requests when the component unmounts
-    return () => {
-        controller.abort()
-    }
-}, [storyId, dispatch]) // only re-run if storyId changes
+        // cleanup function to abort any in-flight requests when the component unmounts
+        return () => {
+            controller.abort()
+        }
+    }, [storyId, dispatch]) 
 
     if (loading && comments.length === 0) {
         return (
