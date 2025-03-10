@@ -1,7 +1,6 @@
 "use client"
 
 import React, {useEffect, useCallback, useMemo} from 'react'
-import HackerNewsAPI from './lib/api'
 import StoryList from './components/StoryList'
 import { useInfiniteScroll } from './lib/useInfiniteScroll'
 import { useDispatch, useSelector } from 'react-redux'
@@ -10,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Star, TrendingUp, Zap } from "lucide-react"
 import store from './redux/store'
 import { setStories, setLoading, setError, setActiveTab, setHasMore, setPage, setStoryIds, setReadStories, setStarredStories, setHiddenStories} from './redux/storiesSlice'
+import storiesService from './lib/storiesService'
 
 type RootState = ReturnType<typeof store.getState>;
 
@@ -29,36 +29,13 @@ export default function HomePage() {
     const starredStories = useSelector((state: RootState) => state.stories.starredStories)
     const hiddenStories = useSelector((state: RootState) => state.stories.hiddenStories)
 
-    const items_per_page = 30
-
-    const visibleStoryIds = useMemo(() => {
-        console.log("Recalculating visible story IDs")
-        return storyIds.filter(id => !hiddenStories.includes(id))
-    }, [storyIds, hiddenStories])
 
     const fetchStoryIdsByType = useCallback(async (type: string) => {
-        console.log(`Fetching story IDs for tab: ${type}`)
         try {
-            let ids: number[] = []
-        
-            switch (type) {
-                case "top":
-                    ids = await HackerNewsAPI.getTopStoryIds()
-                    break
-                case "new":
-                    ids = await HackerNewsAPI.getNewStoryIds()
-                    break
-                case "best":
-                    ids = await HackerNewsAPI.getBestStoryIds()
-                    break
-                case "starred":
-                    ids = starredStories
-                    break
-                default:
-                    ids = await HackerNewsAPI.getTopStoryIds()
-            }
+            dispatch(setLoading(true))
+
+            const ids = await storiesService.fetchStoryIdsByType(type, starredStories)
     
-            console.log(`Fetched ${ids.length} story IDs for ${type}`)
             dispatch(setStoryIds(ids))
             dispatch(setHasMore(ids.length > 0))
             dispatch(setPage(1))
@@ -85,57 +62,19 @@ export default function HomePage() {
 
     
     const fetchStories = useCallback(async () => {
-        // skip fetching if already loading or no more stories
-        if (loading || !hasMore || storyIds.length === 0) {
-            console.log("Skipping fetch due to:", {loading, hasMore, storyIdsLength: storyIds.length})
-            return   
+        if (loading || !hasMore) {
+            console.log("Skipping fetch due to:", {loading, hasMore})
+            return
         }
         
         console.log(`Fetching stories for page ${page}`)
-        dispatch(setLoading(true))
-        dispatch(setError(null))
-
         try {
-            const start = (page - 1) * items_per_page
-            const end = start + items_per_page
-
-            // check if there are more stories to load
-            if (start >= storyIds.length) {
-                dispatch(setHasMore(false))
-                return
-            }
-
-            const currentPageIds = visibleStoryIds.slice(start, end)
-            console.log(`Fetching ${currentPageIds.length} stories`)
-            const fetchedStories = await HackerNewsAPI.getStoriesByIds(currentPageIds)
-            console.log(`Successfully fetched ${fetchedStories.length} stories`)
-
-            const existingIds = new Set(stories.map((story) => story.id))
-
-            let newStories = fetchedStories
-                .filter((story) => !existingIds.has(story.id))
-                .map((story) => ({
-                    ...story,
-                    isRead: readStories.includes(story.id),
-                    isStarred: starredStories.includes(story.id),
-                }))
-        
-            if (activeTab === "starred") {
-                newStories = newStories.filter((story) => starredStories.includes(story.id))
-            }
-        
-            dispatch(setStories([...stories, ...newStories]))
-            dispatch(setPage(page + 1))
-            dispatch(setHasMore(end < storyIds.length))
-            
-
+            await storiesService.fetchStories()
         } catch (error) {
-            dispatch(setError("Failed to fetch stories. Please try again later."))
-            console.error("Error fetching stories:", error)
-        } finally {
-            dispatch(setLoading(false))
+            console.error("Error in fetchStories:", error)
+            dispatch(setError("Failed to load stories."))
         }
-    }, [page, loading, hasMore, storyIds, readStories, starredStories, hiddenStories, activeTab, stories, dispatch])
+    }, [loading, hasMore, page, dispatch])
 
     // trigger initial fetch after storyIds are loaded
     useEffect(() => {
