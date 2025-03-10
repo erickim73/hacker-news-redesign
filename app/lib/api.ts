@@ -28,6 +28,7 @@ export interface Comment {
     deleted?: boolean;
     dead?: boolean;
     replies?: Comment[];
+    hasUnloadedReplies?: boolean
   }
 
 //   interface for hacker news users

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useCallback } from "react"
 import type { Comment as CommentType } from "../lib/api"
 import Comment from "./Comments"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,6 +10,7 @@ import axios from "axios"
 import { useDispatch, useSelector } from "react-redux"
 import { RootState, AppDispatch } from '../redux/store'
 import { setComments, setLoading, setError, increaseVisibleComments,resetCommentState } from "../redux/commentsSlice"
+import { useInfiniteScroll } from "../lib/useInfiniteScroll"
 
 interface CommentSectionProps {
     storyId: number
@@ -29,9 +30,18 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
 
     const BASE_URL = "https://hacker-news.firebaseio.com/v0"
 
-    const loadMoreComments = () => {
-        dispatch(increaseVisibleComments(10))
-    }
+    const loadMoreComments = useCallback(() => {
+        // don't't load more if we're already loading or all comments are visible
+        if (!loading && visibleComments < comments.length) {
+            dispatch(increaseVisibleComments(10))
+        }
+    }, [dispatch, loading, visibleComments, comments.length])
+
+    useInfiniteScroll(loadMoreComments, {
+        // only enable infinite scrolling when there are more comments to load
+        disabled: visibleComments >= comments.length || loading,
+        threshold: 300 // load more when within 300px of bottom
+    })
 
     useEffect(() => {
         // Reset state when storyId changes
@@ -69,7 +79,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
                 return
             }
 
-            const topLevelCommentIds = story.kids.slice(0, 30)
+            const topLevelCommentIds = story.kids.slice(0, 50)
 
             const commentPromises = topLevelCommentIds.map(async (id: number) => {
                 try {
@@ -121,7 +131,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
     }
 }, [storyId, dispatch]) // only re-run if storyId changes
 
-    if (loading) {
+    if (loading && comments.length === 0) {
         return (
             <div className="space-y-4 mt-6">
                 <h2 className="text-xl font-semibold">Comments</h2>
@@ -140,23 +150,23 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
 
     if (error) {
         return (
-        <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-4">Comments</h2>
-            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">{error}</div>
-        </div>
+            <div className="mt-6">
+                <h2 className="text-xl font-semibold mb-4">Comments</h2>
+                <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">{error}</div>
+            </div>
         )
     }
 
     if (comments.length === 0) {
         return (
-        <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-4">Comments</h2>
-            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                <MessageSquare className="h-12 w-12 mb-4 text-muted-foreground/50" />
-                <h3 className="text-lg font-medium mb-1">No comments yet</h3>
-                <p className="text-sm max-w-md">Be the first to comment on this story.</p>
+            <div className="mt-6">
+                <h2 className="text-xl font-semibold mb-4">Comments</h2>
+                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-medium mb-1">No comments yet</h3>
+                    <p className="text-sm max-w-md">Be the first to comment on this story.</p>
+                </div>
             </div>
-        </div>
         )
     }
 
@@ -171,13 +181,30 @@ const CommentSection: React.FC<CommentSectionProps> = ({ storyId, commentCount =
                 ))}
             </div>
 
-            {visibleComments < comments.length && (
+            {loading && comments.length > 0 && (
+                <div className="mt-4 py-4 flex justify-center">
+                    <div className="flex items-center space-x-2">
+                        <div className="h-4 w-4 bg-muted-foreground/30 rounded-full animate-pulse"></div>
+                        <div className="h-4 w-4 bg-muted-foreground/30 rounded-full animate-pulse delay-150"></div>
+                        <div className="h-4 w-4 bg-muted-foreground/30 rounded-full animate-pulse delay-300"></div>
+                        <span className="text-sm text-muted-foreground ml-2">Loading more comments...</span>
+                    </div>
+                </div>
+            )}
+
+            {visibleComments < comments.length && !loading && (
                 <button 
                     onClick={loadMoreComments}
                     className="mt-4 w-full py-2 border border-border rounded-md text-sm hover:bg-muted transition-colors"
                 >
                     Load more comments
                 </button>
+            )}
+
+            {visibleComments >= comments.length && comments.length > 0 && (
+                <div className="mt-6 text-center text-sm text-muted-foreground">
+                    All comments loaded
+                </div>
             )}
 
             {commentCount > comments.length && (
