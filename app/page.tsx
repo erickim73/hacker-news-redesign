@@ -248,26 +248,26 @@ export default function HomePage() {
 
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
             <Tabs defaultValue="top" value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-6">
                     
-                    <TabsTrigger value="top" className="flex items-center gap-2">
+                    <TabsTrigger value="top" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                         <TrendingUp className="h-4 w-4" />
                         <span>Top Stories</span>
                     </TabsTrigger>
 
-                    <TabsTrigger value="new" className="flex items-center gap-2">
+                    <TabsTrigger value="new" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                         <Zap className="h-4 w-4" />
                         <span>New Stories</span>
                     </TabsTrigger>
 
-                    <TabsTrigger value="best" className="flex items-center gap-2">
+                    <TabsTrigger value="best" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                         <Zap className="h-4 w-4" />
                         <span>Best Stories</span>
                     </TabsTrigger>
 
-                    <TabsTrigger value="starred" className="flex items-center gap-2">
+                    <TabsTrigger value="starred" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                         <Star className="h-4 w-4" />
                         <span>Starred</span>
                     </TabsTrigger>

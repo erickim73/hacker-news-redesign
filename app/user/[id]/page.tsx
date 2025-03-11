@@ -154,9 +154,9 @@ export default function UserPage() {
     }
   
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-8">
             <div>
-                <Button variant="ghost" size="sm" asChild className="mb-4">
+                <Button variant="ghost" size="sm" asChild className="mb-2 sm:mb-4 -ml-2">
                     <Link href="/" className="flex items-center gap-1">
                         <ArrowLeft className="h-4 w-4" />
                         <span>Back to stories</span>
@@ -169,17 +169,17 @@ export default function UserPage() {
             </div>
             
             {error && (
-                <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">{error}</div>
+                <div className="bg-destructive/10 border border-destructive text-destructive px-3 sm:px-4 py-2 sm:py-3 rounded-md text-sm sm:text-base">{error}</div>
             )}
             
             {loading && !initialDataLoaded ? (
-                <div className="space-y-6">
+                <div className="space-y-6 sm:space-y-6">
                     <Card>
-                        <CardHeader className="space-y-2">
+                        <CardHeader className="space-y-2 px-4 py-4 sm:px-6 sm:py-6">
                             <Skeleton className="h-8 w-1/3" />
                             <Skeleton className="h-4 w-1/4" />
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-3 sm:space-y-4 px-4 pb-4 sm:px-6 sm:pb-6">
                             <Skeleton className="h-4 w-full" />
                             <Skeleton className="h-4 w-full" />
                             <Skeleton className="h-4 w-2/3" />
