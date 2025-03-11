@@ -8,6 +8,7 @@ import { Newspaper } from "lucide-react"
 import Link from 'next/link'
 import store from "./redux/store";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react"
 
 const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "700"] })
 
@@ -34,6 +35,7 @@ export default function RootLayout({
 
                             <main className="flex-1 bg-background">
                                 {children}
+                                <Analytics />
                             </main>
 
                             <footer className="border-t py-6 text-center text-sm text-muted-foreground bg-background">
